@@ -8,8 +8,10 @@
 #include "png.h"
 #endif // #ifdef DANZEFF_SCEGU
 
+#if __STDC_VERSION__ < 202311L
 #define false 0
 #define true 1
+#endif
 
 // structures used for drawing the keyboard
 #ifdef DANZEFF_SCEGU
