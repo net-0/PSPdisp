@@ -7,7 +7,7 @@ OBJS_INT = main.o menu.o audio.o com.o power.o config.o osk.o debug.o utils.o us
 OBJS = $(GLYPHS) $(OBJS_EXT) $(OBJS_PRX) $(OBJS_INT)
 
 INCDIR = 
-CFLAGS = -O2 -G0 -Wall
+CFLAGS = -O2 -G0 -Wall -std=gnu23 -fcommon
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti
 ASFLAGS = $(CFLAGS)
 LIBS = -lpspaudio -lpng -lz -lpspusb -lpspgum -lpspgu -lm -lpsppower -lpspjpeg -lpsputility -lpspkubridge -lpsprtc -ljpeg

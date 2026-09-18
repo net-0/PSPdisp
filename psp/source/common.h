@@ -17,7 +17,7 @@
 
 
 // Introduce a boolean type
-#ifndef __cplusplus
+#if !defined(__cplusplus) && __STDC_VERSION__ < 202311L
 #define true (1)
 #define false (0)
 typedef int bool;
