@@ -30,7 +30,7 @@
 #include "debug.h"
 #include "config.h"
 #include "graphic.h"
-#include "library/intrafont.h"
+#include "library/intraFont.h"
 
 // sceNetInetSocketAbort is not defined in the PSPSDK headers
 #ifndef sceNetInetSocketAbort

@@ -21,7 +21,7 @@
 #include "utils.h"
 #include "config.h"
 #include "graphic.h"
-#include "library/intrafont.h"
+#include "library/intraFont.h"
 
 
 #define USB_HOSTFSDRIVER_NAME "USBHostFSDriver"
