@@ -382,21 +382,21 @@ void drawCaption(menuProperties* menuProperty, int selectionIndex)
   intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, INTRAFONT_ALIGN_RIGHT);
 
   // Draw time
-  pspTime time;
+  ScePspDateTime time;
   if (sceRtcGetCurrentClockLocalTime(&time) == 0)
   {
     if (l_timeFormat == PSP_SYSTEMPARAM_TIME_FORMAT_12HR)
     {
       // 12 hour clock
 	  if (time.hour >= 12)
-        intraFontPrintf(sansSerifSmall, 470 - batteryOffset, 20, "%d:%.2d pm", (time.hour == 12) ? 12 : time.hour - 12, time.minutes);
+        intraFontPrintf(sansSerifSmall, 470 - batteryOffset, 20, "%d:%.2d pm", (time.hour == 12) ? 12 : time.hour - 12, time.minute);
       else
-        intraFontPrintf(sansSerifSmall, 470 - batteryOffset, 20, "%d:%.2d am", (time.hour == 0) ? 12 : time.hour, time.minutes);
+        intraFontPrintf(sansSerifSmall, 470 - batteryOffset, 20, "%d:%.2d am", (time.hour == 0) ? 12 : time.hour, time.minute);
     }
     else
     {
       // 24 hour clock
-      intraFontPrintf(sansSerifSmall, 470 - batteryOffset, 20, "%d:%.2d", time.hour, time.minutes);
+      intraFontPrintf(sansSerifSmall, 470 - batteryOffset, 20, "%d:%.2d", time.hour, time.minute);
     }
   }
 }
