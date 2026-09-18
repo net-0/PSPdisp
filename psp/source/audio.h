@@ -36,7 +36,7 @@ unsigned int g_audioCurrentBufferSize;
 
 void audioInit();
 void audioTerm();
-void audioCheckIfResetIsNeeded();
+void audioCheckIfResetIsNeeded(comFrameHeader* header);
 void audioResetPlaybackBuffer();
 void audioPlaybackThread(SceSize args, void *argp);
 
