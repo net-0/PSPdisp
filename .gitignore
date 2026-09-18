@@ -1,0 +1,38 @@
+# --- PSP build output (psp/source) ---
+*.o
+*.elf
+*.prx
+*.PBP
+PARAM.SFO
+
+# Vendored prebuilt library is tracked
+*.a
+!psp/source/libjpeg/libjpeg.a
+
+# --- Generic C build output ---
+*.d
+build/
+
+# --- Windows driver / app build output ---
+*.obj
+*.exe
+*.dll
+*.sys
+*.pdb
+*.ilk
+*.res
+*.lib
+*.exp
+*.suo
+*.user
+*.ncb
+*.aps
+[Dd]ebug/
+[Rr]elease/
+[Xx]64/
+ipch/
+
+# --- Editor / tooling ---
+.cache/
+dryrun.log
+targets.log
