@@ -27,7 +27,7 @@
 #include "shared.h"
 
 // Intrafont library
-#include "library/intrafont.h"
+#include "library/intraFont.h"
 
 // Danzeff keyboard
 #include "library/danzeff.h"
