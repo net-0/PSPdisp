@@ -61,9 +61,9 @@ GSource *pspdisp_display_connector_connect(PSPdispEDID edid, PSPdispFrameHandler
 
 // The display connector of this platform, it implements `pspdisp_display_connector_connect()` and defines `PSPDISP_DISPLAY_CONNECTOR_NAME`
 #if defined(_WIN32)
-    #include "./connector/iddcx.c"
+	#include "./connector/iddcx.c"
 #elif defined(__linux__)
-    #include "./connector/evdi.c"
+	#include "./connector/evdi.c"
 #else
-    #error "Unsupported platform"
+	#error "Unsupported platform"
 #endif
