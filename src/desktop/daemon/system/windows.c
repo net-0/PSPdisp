@@ -68,7 +68,7 @@ void pspdisp_daemon_system_watch_stop(GSourceFunc handler, gpointer data) {
  */
 void pspdisp_daemon_system_set_priority(bool higher) {
 	if (!SetPriorityClass(GetCurrentProcess(), higher ? ABOVE_NORMAL_PRIORITY_CLASS : NORMAL_PRIORITY_CLASS))
-		g_debug("%s(): failed to set the priority class: error %lu", __FUNCTION__, GetLastError());
+		g_warning("%s(): failed to set the priority class, the \"Higher process priority\" setting has no effect: error %lu", __FUNCTION__, GetLastError());
 }
 
 /**
