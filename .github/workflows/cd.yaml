@@ -1,0 +1,102 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: cd
+  cancel-in-progress: false
+
+jobs:
+  versioning:
+    name: Compute versioning
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.semver.outputs.next }} # e.g.: v1.0.1
+      version: ${{ steps.semver.outputs.nextStrict }} # e.g.: 1.0.1
+      previous-tag: ${{ steps.previous.outputs.tag }} # e.g.: v1.0.0
+      previous-version: ${{ steps.previous.outputs.version }} # e.g.: 1.0.0
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Compute the previous version
+        id: previous
+        run: |
+          PREVIOUS_TAG=$(git tag --sort=-creatordate | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+
+          echo "tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${PREVIOUS_TAG#v}" >> "$GITHUB_OUTPUT"
+
+          echo "Step Output:"
+          cat "$GITHUB_OUTPUT"
+      - name: Compute the next final version based on Semantic Versioning
+        id: semver
+        uses: ietf-tools/semver-action@v1
+        with:
+          token: ${{ github.token }}
+          # e.g.: git log $(git merge-base ${fromTag} ${branch})..${branch}
+          branch: ${{ github.sha }}
+          fromTag: ${{ steps.previous.outputs.tag }}
+          minorList: feat
+          patchAll: true
+          noNewCommitBehavior: error
+          noVersionBumpBehavior: error
+      - name: Create version tag
+        env:
+          TAG: ${{ steps.semver.outputs.next }}
+        run: |
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "$TAG"
+
+  release:
+    name: Publish release
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    needs:
+      - versioning
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Compute changelog
+        id: changelog
+        uses: requarks/changelog-action@v1
+        with:
+          token: ${{ github.token }}
+          # e.g.: git log $(git merge-base ${toTag} ${fromTag})..${fromTag}
+          fromTag: ${{ needs.versioning.outputs.tag }}
+          toTag: ${{ needs.versioning.outputs.previous-tag }}
+          writeToFile: false
+          includeRefIssues: true
+          useGitmojis: true
+          includeInvalidCommits: false
+      - name: Format changelog
+        id: format-changelog
+        env:
+          CHANGES: ${{ steps.changelog.outputs.changes }}
+          PREVIOUS_TAG: ${{ needs.versioning.outputs.previous-tag }}
+          TAG: ${{ needs.versioning.outputs.tag }}
+        run: |
+          {
+            echo "changes<<EOF"
+            echo "$CHANGES"
+            echo ""
+            echo "**Full Changelog**: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$PREVIOUS_TAG...$TAG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+      - name: Publish release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ needs.versioning.outputs.tag }}
+          name: ${{ needs.versioning.outputs.tag }}
+          body: ${{ steps.format-changelog.outputs.changes }}
+          prerelease: ${{ github.ref_name != 'main' }}
+          makeLatest: ${{ github.ref_name == 'main' }}
+          allowUpdates: false
+          token: ${{ github.token }}
