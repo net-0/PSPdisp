@@ -18,6 +18,9 @@
 	#include <ifaddrs.h>
 	#include <net/if.h>
 	#include <netdb.h>
+#else
+	#include <winsock2.h>
+	#include <iphlpapi.h>
 #endif
 
 /**
@@ -51,6 +54,36 @@ char *pspdisp_gtk_page_wlan_addresses() {
 		}
 		freeifaddrs(interfaces);
 	}
+#else
+	// The size of the list is only known by asking, and it may grow before the next try
+	ULONG size = 16384;
+	IP_ADAPTER_ADDRESSES *adapters = NULL;
+	ULONG result = ERROR_BUFFER_OVERFLOW;
+
+	for (int tries = 0; tries < 3 && result == ERROR_BUFFER_OVERFLOW; tries++) {
+		g_free(adapters);
+		adapters = g_malloc(size);
+		result = GetAdaptersAddresses(AF_INET, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER, NULL, adapters, &size);
+	}
+
+	if (result == NO_ERROR) {
+		for (IP_ADAPTER_ADDRESSES *adapter = adapters; adapter != NULL; adapter = adapter->Next) {
+			if (adapter->OperStatus != IfOperStatusUp || adapter->IfType == IF_TYPE_SOFTWARE_LOOPBACK) continue;
+
+			char *name = g_utf16_to_utf8((const gunichar2 *) adapter->FriendlyName, -1, NULL, NULL, NULL);
+			for (IP_ADAPTER_UNICAST_ADDRESS *unicast = adapter->FirstUnicastAddress; unicast != NULL; unicast = unicast->Next) {
+				const struct sockaddr_in *ipv4 = (const struct sockaddr_in *) unicast->Address.lpSockaddr;
+				GInetAddress *inet = g_inet_address_new_from_bytes((const guint8 *) &ipv4->sin_addr, G_SOCKET_FAMILY_IPV4);
+				char *address = g_inet_address_to_string(inet);
+
+				g_string_append_printf(text, "%s%s (%s)", text->len > 0 ? "\n" : "", address, name);
+				g_free(address);
+				g_object_unref(inet);
+			}
+			g_free(name);
+		}
+	}
+	g_free(adapters);
 #endif
 
 	if (text->len == 0)
