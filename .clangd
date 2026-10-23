@@ -10,3 +10,19 @@ CompileFlags:
 # The doc comments are Doxygen (`@brief`, `@param`, `@return`), shown as such on hover instead of as plain text
 Documentation:
   CommentFormat: Doxygen
+
+---
+# The PSP code is built by psp-gcc, whose target ("psp") clang doesn't know, so it's parsed as the PSP CPU instead:
+# a little-endian MIPS with single precision floats (the Allegrex), with the PSP headers (newlib) instead of the host ones, and the macros psp-gcc defines.
+If:
+  PathMatch: psp/.*
+CompileFlags:
+  Add:
+    - --target=mipsel-unknown-elf
+    - -msingle-float
+    - -nostdlibinc
+    - -isystem/usr/local/pspdev/psp/include
+    - -D__psp__
+    - -D__PSP__
+    - -D_PSP
+    - -DPSP

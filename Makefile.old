@@ -1,0 +1,69 @@
+# TODO: comando para criar o "compileCommands" para a máquina do dev?
+
+# Makefile for a GTK 4 application in C
+#
+#   make              debug build   -> build/debug/$(APP)
+#   make release      release build -> build/release/$(APP)
+#   make run          build and run (debug)
+#   make compdb       generate compile_commands.json (needs bear)
+#   make clean        remove build/
+
+APP     := hello
+SRC_DIR := src
+
+PKGS    := gtk4
+CC      ?= cc
+
+SRCS    := $(wildcard $(SRC_DIR)/*.c)
+
+CFLAGS_COMMON := -std=c17 -Wall -Wextra -Wpedantic $(shell pkg-config --cflags $(PKGS))
+LDLIBS        := $(shell pkg-config --libs $(PKGS))
+
+# # Build mode: debug (default) or release
+# MODE ?= debug
+# ifeq ($(MODE),release)
+#     CFLAGS  := $(CFLAGS_COMMON) -O2 -DNDEBUG
+#     LDFLAGS := -s
+# else
+#     CFLAGS  := $(CFLAGS_COMMON) -O0 -g3
+#     LDFLAGS :=
+# endif
+
+# Windows (MSYS2): no console window, .exe suffix
+ifeq ($(OS),Windows_NT)
+    LDFLAGS += -mwindows
+    EXE     := .exe
+endif
+
+BUILD_DIR := build/$(MODE)
+OBJS      := $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+DEPS      := $(OBJS:.o=.d)
+TARGET    := $(BUILD_DIR)/$(APP)$(EXE)
+
+.PHONY: all release run compdb clean
+
+all: $(TARGET)
+
+release:
+	$(MAKE) MODE=release
+
+$(TARGET): $(OBJS)
+	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
+
+# -MMD -MP: auto-generate header dependencies
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
+
+$(BUILD_DIR):
+	mkdir -p $@
+
+run: $(TARGET)
+	./$(TARGET)
+
+compdb: clean
+	bear -- $(MAKE)
+
+clean:
+	rm -rf build
+
+-include $(DEPS)

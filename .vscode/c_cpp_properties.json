@@ -1,0 +1,113 @@
+{
+  "version": 4,
+  "configurations": [
+    {
+      // A single configuration covering every tree in the repo: the GTK 4
+      // desktop host (src/desktop), the shared code (src/*.h), the PSP
+      // payloads (psp/source) and the legacy Win32 helpers (app/source).
+      //
+      // The C/C++ extension applies one configuration to every file, so the
+      // PSP sources are parsed as if they were host code and the desktop
+      // sources see the PSP SDK headers. Includes resolve either way; the
+      // trade-off is the occasional false squiggle where the two toolchains
+      // disagree (MIPS builtins, libc type collisions). Real errors come from
+      // the Makefiles, not from IntelliSense.
+      "name": "PSPdisp",
+
+      // Files listed in compile_commands.json are parsed with their own
+      // command instead, e.g. the Windows connectors and the IddCx driver with
+      // the MinGW cross-compiler, so they see <windows.h> and _WIN32. Every
+      // other file falls back to the settings below. Regenerate it with
+      // tools/gen-compile-commands.sh after adding a source file.
+      "compileCommands": "${workspaceFolder}/compile_commands.json",
+
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "c23",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-x64",
+
+      "includePath": [
+        // --- repo trees -------------------------------------------------
+        // src/ is on the path itself because the desktop Makefile builds with
+        // -I.. from src/desktop, so shared headers are #include "shared.h".
+        "${workspaceFolder}/src",
+        "${workspaceFolder}/src/**",
+        // psp/source builds with -I. from that directory.
+        "${workspaceFolder}/psp/source",
+        "${workspaceFolder}/psp/source/**",
+        "${workspaceFolder}/app/source/**",
+
+        // --- GTK 4 (pkg-config --cflags gtk4) ---------------------------
+        // Versioned paths; refresh these after a GTK major upgrade.
+        "/usr/include/gtk-4.0",
+        "/usr/include/pango-1.0",
+        "/usr/include/fribidi",
+        "/usr/include/harfbuzz",
+        "/usr/include/gdk-pixbuf-2.0",
+        "/usr/include/glycin-2",
+        "/usr/include/cairo",
+        "/usr/include/freetype2",
+        "/usr/include/libpng16",
+        "/usr/include/pixman-1",
+        "/usr/include/graphene-1.0",
+        "/usr/lib/graphene-1.0/include",
+        "/usr/include/glib-2.0",
+        "/usr/lib/glib-2.0/include",
+        "/usr/include/libmount",
+        "/usr/include/blkid",
+        "/usr/include/sysprof-6",
+
+        // --- PipeWire (pkg-config --cflags libpipewire-0.3) -------------
+        // Versioned paths; refresh these after a PipeWire major upgrade.
+        "/usr/include/pipewire-0.3",
+        "/usr/include/spa-0.2",
+
+        // --- GUsb (pkg-config --cflags gusb) ----------------------------
+        // Versioned paths; refresh these after a GUsb or libusb major upgrade.
+        "/usr/include/gusb-1",
+        "/usr/include/libusb-1.0",
+        "/usr/include/json-glib-1.0",
+
+        // // --- GTK 3 (pkg-config --cflags gtk+-3.0) -----------------------
+        // // Versioned paths; refresh these after a GTK major upgrade.
+        // "/usr/include/gtk-3.0",
+        // "/usr/include/pango-1.0",
+        // "/usr/include/cloudproviders",
+        // "/usr/include/cairo",
+        // "/usr/include/gdk-pixbuf-2.0",
+        // "/usr/include/glycin-2",
+        // "/usr/include/at-spi2-atk/2.0",
+        // "/usr/include/at-spi-2.0",
+        // "/usr/include/atk-1.0",
+        // "/usr/include/dbus-1.0",
+        // "/usr/lib/dbus-1.0/include",
+        // "/usr/include/fribidi",
+        // "/usr/include/pixman-1",
+        // "/usr/include/harfbuzz",
+        // "/usr/include/freetype2",
+        // "/usr/include/libpng16",
+        // "/usr/include/gio-unix-2.0",
+        // "/usr/include/glib-2.0",
+        // "/usr/lib/glib-2.0/include",
+        // "/usr/include/libmount",
+        // "/usr/include/blkid",
+        // "/usr/include/sysprof-6",
+
+        // --- PSP SDK (psp-config --psp-prefix / --pspsdk-path) ----------
+        "/usr/local/pspdev/psp/include",
+        "/usr/local/pspdev/psp/sdk/include",
+        // psp-gcc's own headers live under a version directory
+        // (.../psp/15.2.0/include); ** keeps this working across upgrades.
+        "/usr/local/pspdev/lib/gcc/psp/**"
+      ],
+
+      "defines": [
+        // psp/source/Makefile passes this; without it the firmware-gated
+        // blocks in the PSP sources are greyed out.
+        "_PSP_FW_VERSION=371"
+      ],
+
+      "compilerArgs": ["-pthread"]
+    }
+  ]
+}

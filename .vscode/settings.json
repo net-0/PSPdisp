@@ -1,0 +1,20 @@
+{
+  "makefile.makefilePath": "psp/source/Makefile",
+  "makefile.makeDirectory": "psp/source",
+  "makefile.configureOnOpen": true,
+  "files.associations": {
+    "**/src/**/*.c": "c",
+    "**/src/**/*.h": "c",
+    "**/psp/**/*.c": "c",
+    "**/psp/**/*.h": "c"
+  },
+
+  // IntelliSense by clangd (its config is .clangd), instead of the engine of the Microsoft C/C++ extension
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "clangd.arguments": [
+    // Ask these compilers for their system headers (psp-gcc's target is unknown to clang, .clangd gives its headers)
+    "--query-driver=/usr/bin/gcc,/usr/bin/x86_64-w64-mingw32-gcc",
+    // No #include added on completion, the code includes .c files on purpose
+    "--header-insertion=never"
+  ]
+}

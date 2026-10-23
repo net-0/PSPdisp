@@ -1,0 +1,64 @@
+
+TODO (0.7.x):
+- Daemon: on Windows, when its console is closed, the process may end before the daemon finished stopping (the console handler of `daemon/system/windows.c` could wait for it)
+- Daemon: no autostart yet (an XDG autostart entry keeps it in the desktop session, where polkit can ask for the password of the EVDI device)
+- Daemon: the polkit prompt for a new EVDI device is untested yet (`sudo make install`, then connect a PSP with no free EVDI device), and from a `systemctl --user` service, out of the desktop session, polkit may not find the agent
+- UI: on  Windows, the executables have no icon yet: a `.ico` made from `ui/com.pspdisp.desktop.svg` (e.g. `magick -define icon:auto-resize=256,128,64,48,32,24,16`), in a resource file linked with `windres`
+- Display: on Windows, the scaled up modes (960x544 and 1920x1088) are untested: the IddCx driver offers the modes of the EDID that are the PSP resolution scaled up by a power of 2, and scales their frames down with their mip levels on the GPU (`GenerateMips()`, see `iddcx/BUILDING.md`)
+- UI: on Windows, the addresses of the "WLAN" page (`GetAdaptersAddresses()`) are untested, and the link needs `-liphlpapi`
+- Installer: delete old files, including old config files on Windows!
+- Status: the socket of the daemon is an AF_UNIX one (`g_unix_socket_address_new()`), on Windows it needs AF_UNIX sockets (Windows 10 1803 or later) and their support in GLib, untested
+- Tests: the test programs stop on SIGINT and SIGTERM with `g_unix_signal_add()`, Unix only (they could use `daemon/system.c` as the daemon)
+- Settings: on Windows, the lock of the settings file (`LockFileEx()` on `.lock`, see `pspdisp_settings_lock()`) is untested
+- Audio: create a virtual USB audio output device on Windows
+- Controller: create a virtual USB gamepad device on Windows
+- Controller: create a virtual keyboard and mouse device on Windows
+
+TODO:
+- Custom Makefile without relying on $PSPSDK/lib/build.mak for the PSP app?
+- Main Makefile with include for sub-Makefiles for each thing to be built, so the Makefile Extension can finally work with it?
+- Linux installer may need to install EVDI, and ensure that "initial_device_count" is at least 1 (otherwise the daemon asks for the password through polkit to create the device)
+- Linux installer may need to enable EVDI on boot (otherwise the daemon asks for the password through polkit to load it)
+- Add a .vscode/extensions.json to suggest extensions for this project?
+- Pipeline action "editorconfig-checker" to check the rules of .editorconfig and fail if something breaks
+- Pipeline action to run clang with "-Wdocumentation" to check the doc agains the code
+- Audio: try to avoid the old model that tied the audio with the frame rate (the old PSP app resets its sound when a frame comes without a chunk, so the daemon keeps that model until the new protocol)
+- Controller:
+ - the controls only come with the responses to the frames (10 to 33 times per second with sound), the new protocol could send them on their own, for less latency
+ - the characters of the on-screen keyboard of the PSP are typed with the keys of the keyboard layout of the desktop (see `controller/input/keymap.c`), but on Wayland with its first layout (only the window with the keyboard focus is told the active one), and on X11 a change of the layouts is only seen by a new virtual keyboard (the next control file used)
+ - no virtual gamepad on Windows yet, it needs a driver (e.g. ViGEmBus, retired in 2023 but still working, or a Virtual HID Framework driver of PSPdisp, as the IddCx one)
+- Audio (Windows):
+ - the WASAPI capture is untested, and needs Windows 10 or later (AUTOCONVERTPCM)
+ - a lost output device (removed, disabled, or its format changed) silences the PSP until it disconnects, without a warning (`GetNextPacketSize()` fails with `AUDCLNT_E_DEVICE_INVALIDATED`), and a new default output keeps the old one recorded; the connector thread could set the client up again on the default device (`IMMNotificationClient` tells when it changes)
+ - the chunk being filled when the sound stops starts the next sound, as Windows gives no data while nothing plays; complete it with silence, as the PipeWire connector does when its stream stops
+ - in `wasapi.c`, `CoUninitialize()` is called even when `CoInitializeEx()` failed, and the wait for the connector thread in `pspdisp_audio_connector_connect()` has its `while` body on the same line
+- Daemon:
+ - the PSP model, region and serial number of the virtual display are fixed in config.c, the old protocol doesn't tell them
+ - the screen modes, viewports, SideShow and display autoselection are turned back to their defaults (the virtual display is already the PSP size, and the only one)
+ - the old desktop app could also mirror a display of the computer to the PSP (the screen modes "Fit screen", "Follow mouse" and "Static viewport", the viewport sizes, "Set screen origin", "Follow mouse across screens", "Hide/scale cursor"), the daemon only streams its virtual display; mirroring would need a screen capture (e.g. the screencast portal of PipeWire)
+- USB: a PSP that answers the handshake but fails right after is connected again at once, in a loop (as before the hotplug), maybe wait `PSPDISP_USB_RETRY_INTERVAL` after a short session
+- WLAN:
+ - the old protocol sends the password and the frames in clear, so anyone on the network can read them (the new protocol could encrypt them)
+ - the daemon listens on every network interface, and with no password by default (`[WLAN] Password`, it warns then), set one on the install
+ - on Windows, the firewall must allow the incoming connections on TCP 17584 (plus the port offset), the installer could add the rule
+- CLI: should we have a single binary with the "--ui" to run the UI application?
+- the notifications of the WLAN events and the "OpenMenu" action of the control files need the desktop app running (the daemon runs in the session of the user now, so it could send them itself)
+- no Windows build yet (the Makefile only builds for Linux), and the Windows side of `daemon/system.c` (console events, priority class, elevated token) is untested
+- Improve the communication protocol to include a handshake with the PSP model infos
+- Remove PSPlink
+- New PSP app:
+ - Try to use PSP theme
+ - PSP owns the configurations (quality, resolution, controller mappings, etc...)
+ - Analyze replacing the Danzeff on-screen keyboard by the one of the PSP (`sceUtilityOsk`, already used by the menu, see `oskDrawKeyboard()` in `psp/source/osk.c`): it sends a whole text once confirmed instead of each key as it's typed, and in Unicode, beyond the 8 bits the old protocol has for a character
+ - Support custom pixel_formats? Smaller pixel formats means smaller bandwith, maybe even lattency
+- Maybe support MIC? Study its viability first
+- Compress sound
+- Maybe make USB a custom device: advertise with flags of store, joystick, audio and display (custom, make a user-driver for virtual display)
+ - How are we going to deal with keyboard? USB keyboards can only send codes, but the actual input depends on the desktop keyboard layout :/
+- Daemon: as the user, the "Higher process priority" (nice -5) is refused without CAP_SYS_NICE, so it only warns; rtkit could grant it without any setup (MakeThreadHighPriority for each thread over D-Bus, as PipeWire does, allowed for the local sessions)
+
+TODO (Other Projects):
+ - Linux:
+  - Add modesets on EVDI, so we can define pixel_format and other stuff
+ - GTK:
+  - The notebook isn't scrollable because of a GTK bug (up to 4.24 and main at least): the "leave" handler of its scroll arrows (`gtk_notebook_arrow_drag_leave()`) has the signature of `GtkDropTarget`, but it's connected to a `GtkDropControllerMotion`, so it stops the scrolling of a garbage pointer, and a drag over an arrow scrolls the pages until the last one; report it to GTK, and make it scrollable again once it's fixed
