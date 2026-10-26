@@ -539,6 +539,7 @@ char *pspdisp_ui_size_text(uint64_t bytes) {
  * @return Its path (its name if it's not found, so starting it tells why), free it with `g_free()`.
  */
 char *pspdisp_ui_daemon_path() {
+	// TODO: usar env variables?
 	char *found = g_find_program_in_path("pspdisp-daemon");
 	return found != NULL ? found : g_strdup("pspdisp-daemon");
 }
