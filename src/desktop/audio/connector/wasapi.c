@@ -22,6 +22,7 @@
 
 #define COBJMACROS
 #include <initguid.h> // Before the WASAPI headers, so their GUIDs are defined here
+#include <winsock2.h> // Before <windows.h>, or its <winsock.h> clashes with the <winsock2.h> of GIO (e.g. <gio/gnetworking.h> in wlan.c)
 #include <windows.h>
 #include <mmdeviceapi.h>
 #include <audioclient.h>

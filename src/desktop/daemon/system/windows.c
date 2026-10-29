@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <winsock2.h> // Before <windows.h>, or its <winsock.h> clashes with the <winsock2.h> of GIO (e.g. <gio/gnetworking.h> in wlan.c)
 #include <windows.h>
 #include <glib.h>
 #include "../system.c" // Its declarations (when `system.c` includes this file, it already has them and this include is skipped)

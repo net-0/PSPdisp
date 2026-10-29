@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <winsock2.h> // Before <windows.h>, or its <winsock.h> clashes with the <winsock2.h> of GIO (e.g. <gio/gnetworking.h> in wlan.c)
 #include <windows.h>
 #include "../input.c" // Its declarations (when `input.c` includes this file, it already has them and this include is skipped)
 
@@ -81,7 +82,28 @@ uint16_t pspdisp_input_scancode_of_key(uint32_t keycode) {
 	if (keycode == 0 || keycode > 0xFF) return 0;
 
 	// With 0xE0 for an extended key, and the left key for a virtual key of both sides (e.g. `VK_SHIFT`)
-	const uint16_t scancode = (uint16_t) MapVirtualKeyW(keycode, MAPVK_VK_TO_VSC_EX);
+	uint16_t scancode = (uint16_t) MapVirtualKeyW(keycode, MAPVK_VK_TO_VSC_EX);
+
+	switch (keycode) {
+		// Windows gives the keys of the numeric keypad for the keys that are also there, without 0xE0 (e.g. 0x48, the 8 of the keypad, for up)
+		case VK_PRIOR:
+		case VK_NEXT:
+		case VK_END:
+		case VK_HOME:
+		case VK_LEFT:
+		case VK_UP:
+		case VK_RIGHT:
+		case VK_DOWN:
+		case VK_INSERT:
+		case VK_DELETE:
+			scancode |= PSPDISP_INPUT_SENDINPUT_EXTENDED;
+			break;
+		// And Alt+SysRq (0x54) for Print Screen
+		case VK_SNAPSHOT:
+			scancode = PSPDISP_INPUT_SENDINPUT_EXTENDED | 0x37;
+			break;
+	}
+
 	return pspdisp_input_has_key(scancode) ? scancode : 0;
 }
 
