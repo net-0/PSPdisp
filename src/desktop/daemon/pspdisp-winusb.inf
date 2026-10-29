@@ -1,0 +1,57 @@
+; SPDX-License-Identifier: BSD-3-Clause
+;
+; pspdisp-winusb.inf - WinUSB driver of the PSP for the PSPdisp daemon (Windows)
+;
+; Copyright © 2026 Arthur Neto
+;
+; Binds the WinUSB driver of Windows to the PSP, so the daemon opens it through GUsb (libusb), as the udev rule does on Linux.
+; It copies no file, the driver (winusb.sys) comes with Windows, but Windows only installs a signed driver package, so its catalog must be signed.
+; With a certificate of your own, from an administrator PowerShell, in this folder (Inf2Cat and signtool come with the WDK):
+;
+; Then plug the PSP again.
+
+[Version]
+Signature   = "$Windows NT$"
+Class       = USBDevice
+ClassGuid   = {88BAE032-5A81-49f0-BC3D-A4FF138216D6}
+Provider    = %Provider%
+CatalogFile = pspdisp-winusb.cat
+DriverVer   = 10/29/2026,1.0.0.0
+PnpLockdown = 1
+
+[Manufacturer]
+%Provider% = PSPdisp, NTamd64, NTarm64, NTx86
+
+; A PSP running the PSPdisp app in USB mode: the USBHostFS driver of PSPLink shows up as a Sony device, as type B (01C9, the default) or type C (01CA)
+[PSPdisp.NTamd64]
+%PSP.TypeB% = PSP_Install, USB\VID_054C&PID_01C9
+%PSP.TypeC% = PSP_Install, USB\VID_054C&PID_01CA
+
+[PSPdisp.NTarm64]
+%PSP.TypeB% = PSP_Install, USB\VID_054C&PID_01C9
+%PSP.TypeC% = PSP_Install, USB\VID_054C&PID_01CA
+
+[PSPdisp.NTx86]
+%PSP.TypeB% = PSP_Install, USB\VID_054C&PID_01C9
+%PSP.TypeC% = PSP_Install, USB\VID_054C&PID_01CA
+
+; The WinUSB driver of Windows, from its own INF
+[PSP_Install]
+Include = winusb.inf
+Needs   = WINUSB.NT
+
+[PSP_Install.Services]
+Include = winusb.inf
+Needs   = WINUSB.NT.Services
+
+[PSP_Install.HW]
+AddReg = PSP_AddReg
+
+; The device interface that libusb looks for to open the PSP with WinUSB
+[PSP_AddReg]
+HKR,,DeviceInterfaceGUIDs,0x10000,"{21EFA200-DE10-44A9-BB86-AD29A2FD1E74}"
+
+[Strings]
+Provider  = "PSPdisp"
+PSP.TypeB = "PSP (PSPdisp, USB type B)"
+PSP.TypeC = "PSP (PSPdisp, USB type C)"
