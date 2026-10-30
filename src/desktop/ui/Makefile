@@ -35,6 +35,8 @@ UI_CPPFLAGS := $(CPPFLAGS) $(shell pkg-config --cflags $(UI_PACKAGES))
 UI_LDFLAGS  := $(LDFLAGS)
 UI_LDLIBS   := $(LDLIBS) $(shell pkg-config --libs $(UI_PACKAGES)) $(UI_PLATFORM_LDLIBS)
 
+ALL += $(BIN_DIR)/pspdisp-ui$(EXE) $(BIN_DIR)/com.pspdisp.ui.svg $(BIN_DIR)/com.pspdisp.ui.desktop
+
 # The binary of the app
 $(BIN_DIR)/pspdisp-ui$(EXE): $(UI_DIR)/main.c | $(BIN_DIR) $(DEP_DIR)
 	$(CC) $(UI_CPPFLAGS) -MMD -MP -MF $(DEP_DIR)/$(@F).d -MT $@ $(UI_CFLAGS) $(UI_LDFLAGS) $< -o $@ $(UI_LDLIBS)

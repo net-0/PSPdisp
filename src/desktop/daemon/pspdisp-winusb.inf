@@ -6,7 +6,13 @@
 ;
 ; Binds the WinUSB driver of Windows to the PSP, so the daemon opens it through GUsb (libusb), as the udev rule does on Linux.
 ; It copies no file, the driver (winusb.sys) comes with Windows, but Windows only installs a signed driver package, so its catalog must be signed.
-; With a certificate of your own, from an administrator PowerShell, in this folder (Inf2Cat and signtool come with the WDK):
+; On Windows, `make` builds the package in build/winusb/ (see winusb.mk, it needs the WDK for Inf2Cat and signtool): this INF, its catalog (pspdisp-winusb.cat),
+; and the self-signed certificate that signs it (pspdisp-winusb.cer, with its key in pspdisp-winusb.pfx, which must not be shared), made again on each build,
+; so trust the certificate of the build you install. To install it, from an administrator PowerShell, in that folder:
+;
+;   Import-Certificate -FilePath pspdisp-winusb.cer -CertStoreLocation Cert:\LocalMachine\Root
+;   Import-Certificate -FilePath pspdisp-winusb.cer -CertStoreLocation Cert:\LocalMachine\TrustedPublisher
+;   pnputil /add-driver pspdisp-winusb.inf /install
 ;
 ; Then plug the PSP again.
 
