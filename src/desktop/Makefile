@@ -19,8 +19,8 @@ CC := gcc
 # The platform the compiler builds for, which picks the libraries of the programs: Windows with MinGW (e.g. x86_64-w64-mingw32), Linux otherwise
 PLATFORM := $(if $(findstring mingw,$(shell $(CC) -dumpmachine)),windows,linux)
 
-# The extension of the programs (given by the root Makefile, .exe on Windows)
-EXE ?= $(if $(filter windows,$(PLATFORM)),.exe)
+# The extension of the programs (.exe on Windows)
+EXE := $(if $(filter windows,$(PLATFORM)),.exe)
 
 # The command that fixes the .d file of a binary, run after it's compiled (`$(DEP_FIX) <file>.d`):
 # with the make of MSYS2 (whose paths are /c/...), MSYS2 gives the paths to the Windows compiler as C:/..., which it writes in the .d files,
@@ -37,6 +37,15 @@ CPPFLAGS := $(CPPFLAGS) -DPSPDISP_VERSION='"$(VERSION)"'
 LDFLAGS  := $(LDFLAGS)
 LDLIBS   := $(LDLIBS)
 
+.DEFAULT_GOAL := all
+
+# Always out of date, so the targets that depend on it are rebuilt on each run
+FORCE:
+
+ALL :=
+
 # The programs
 include $(DESKTOP_DIR)/daemon/Makefile
 include $(DESKTOP_DIR)/ui/Makefile
+
+all: $(ALL)

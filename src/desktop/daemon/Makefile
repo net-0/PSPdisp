@@ -35,6 +35,8 @@ DAEMON_CPPFLAGS := $(CPPFLAGS) $(shell pkg-config --cflags $(DAEMON_PACKAGES))
 DAEMON_LDFLAGS  := $(LDFLAGS)
 DAEMON_LDLIBS   := $(LDLIBS) $(shell pkg-config --libs $(DAEMON_PACKAGES)) $(DAEMON_PLATFORM_LDLIBS) -lm
 
+ALL += $(BIN_DIR)/pspdisp-daemon$(EXE)
+
 # The binary of the daemon, the name the desktop app looks for in the PATH to start it (see ui/app.c)
 $(BIN_DIR)/pspdisp-daemon$(EXE): $(DAEMON_DIR)/main.c | $(BIN_DIR) $(DEP_DIR)
 	$(CC) $(DAEMON_CPPFLAGS) -MMD -MP -MF $(DEP_DIR)/$(@F).d -MT $@ $(DAEMON_CFLAGS) $(DAEMON_LDFLAGS) $< -o $@ $(DAEMON_LDLIBS)
@@ -42,3 +44,6 @@ $(BIN_DIR)/pspdisp-daemon$(EXE): $(DAEMON_DIR)/main.c | $(BIN_DIR) $(DEP_DIR)
 
 # Include the dependencies to build the binary, the .d file is written when the binary is compiled
 -include $(DEP_DIR)/pspdisp-daemon$(EXE).d
+
+# The WinUSB driver package of the PSP (Windows), until the PSP app says itself that it uses WinUSB (see winusb.mk)
+include $(DAEMON_DIR)/winusb.mk
