@@ -44,6 +44,11 @@ FORCE:
 
 ALL :=
 
+# The certificate that signs the driver packages (Windows), before the programs, as their packages use its variables in their prerequisites
+ifeq ($(PLATFORM),windows)
+include $(DESKTOP_DIR)/winsign.mk
+endif
+
 # The programs
 include $(DESKTOP_DIR)/daemon/Makefile
 include $(DESKTOP_DIR)/ui/Makefile
