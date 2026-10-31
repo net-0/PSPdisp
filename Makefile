@@ -5,7 +5,6 @@ DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 BIN_DIR := $(DIR)/build
 DEP_DIR := $(BIN_DIR)/dep
-WINUSB_DIR := $(BIN_DIR)/winusb
 
 # The extension of the programs: .exe when the compiler builds for Windows (MinGW, e.g. the UCRT64 shell of MSYS2)
 EXE := $(if $(findstring mingw,$(shell gcc -dumpmachine)),.exe)
@@ -19,12 +18,12 @@ all: desktop
 FORCE:
 
 # The folders of the build, created before a program is built in them (each program has them as order-only prerequisites)
-$(BIN_DIR) $(DEP_DIR) $(WINUSB_DIR):
+$(BIN_DIR) $(DEP_DIR):
 	mkdir -p $@
 
-desktop: $(BIN_DIR) $(DEP_DIR) $(WINUSB_DIR) FORCE
+desktop: $(BIN_DIR) $(DEP_DIR) FORCE
 	$(MAKE) -k -C $(DIR)/src/desktop \
 		VERSION=$(VERSION) \
 		BIN_DIR=$(BIN_DIR) \
-		DEP_DIR=$(DEP_DIR) \
-		WINUSB_DIR=$(WINUSB_DIR)
+		DEP_DIR=$(DEP_DIR)
+

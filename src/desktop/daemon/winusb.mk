@@ -1,7 +1,10 @@
-# This file uses the DAEMON_* prefix, as it's included by the Makefile of the daemon, which gives it DAEMON_DIR, VERSION, PLATFORM and FORCE, and WINUSB_DIR, the folder of the package (e.g. build/winusb)
+# This file uses the DAEMON_* prefix, as it's included by the Makefile of the daemon (on Windows only), which gives it DAEMON_DIR, BIN_DIR, VERSION, PLATFORM and FORCE
 #
 # The WinUSB driver package of the PSP (Windows, see pspdisp-winusb.inf): the INF, its catalog, signed with a self-signed certificate, and that certificate, for the users to trust.
-# Only needed until the PSP app says itself that it uses WinUSB (Microsoft OS descriptors), then remove this file, its include and the winusb rules of the root Makefile.
+# Only needed until the PSP app says itself that it uses WinUSB (Microsoft OS descriptors), then remove this file and its include in the Makefile of the daemon.
+
+# The folder of the package
+WINUSB_DIR := $(BIN_DIR)/winusb
 
 # The password of the .pfx of the certificate, given to openssl and signtool
 DAEMON_WINUSB_PFX_PASSWORD := leeeroyjenkins
@@ -16,6 +19,10 @@ DAEMON_WINUSB_VERSION_WORDS := $(subst -, ,$(subst ., ,$(patsubst v%,%,$(VERSION
 DAEMON_WINUSB_VERSION := $(or $(word 1,$(DAEMON_WINUSB_VERSION_WORDS)),0).$(or $(word 2,$(DAEMON_WINUSB_VERSION_WORDS)),0).$(or $(word 3,$(DAEMON_WINUSB_VERSION_WORDS)),0).$(or $(word 4,$(DAEMON_WINUSB_VERSION_WORDS)),0)
 
 ALL += $(WINUSB_DIR)/pspdisp-winusb.inf $(WINUSB_DIR)/pspdisp-winusb.pfx $(WINUSB_DIR)/pspdisp-winusb.cer $(WINUSB_DIR)/pspdisp-winusb.cat
+
+# The folder of the package, created before a file is made in it (each file has it as an order-only prerequisite)
+$(WINUSB_DIR):
+	mkdir -p $@
 
 # The INF, with the date and the version of the build, made again on each run (FORCE)
 $(WINUSB_DIR)/pspdisp-winusb.inf: $(DAEMON_DIR)/pspdisp-winusb.inf FORCE | $(WINUSB_DIR)

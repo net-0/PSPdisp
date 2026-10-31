@@ -46,4 +46,6 @@ $(BIN_DIR)/pspdisp-daemon$(EXE): $(DAEMON_DIR)/main.c | $(BIN_DIR) $(DEP_DIR)
 -include $(DEP_DIR)/pspdisp-daemon$(EXE).d
 
 # The WinUSB driver package of the PSP (Windows), until the PSP app says itself that it uses WinUSB (see winusb.mk)
+ifeq ($(PLATFORM),windows)
 include $(DAEMON_DIR)/winusb.mk
+endif
