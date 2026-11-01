@@ -7,7 +7,7 @@
  *****************************************************/
 
 /*
- * The virtual display is made by the PSPdisp IddCx driver (`iddcx/driver.cpp`), which must be installed first (see `iddcx/BUILDING.md`).
+ * The virtual display is made by the PSPdisp IddCx driver (`iddcx/driver.cpp`), which must be installed first (see the header of `iddcx/pspdisp-iddcx.inf`).
  *
  * This connector only talks to the driver: it connects a monitor with the PSP EDID, then waits for its power changes and the frames it asks for (see `iddcx/protocol.h`).
  */

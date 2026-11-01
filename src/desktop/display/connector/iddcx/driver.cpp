@@ -20,7 +20,7 @@
  * The modes are the PSP resolution and it scaled up 2 or 4 times (from the EDID), whose frames the GPU scales down to the PSP resolution with their mip levels, so the frames sent are always 480x272.
  * Windows unassigns the swap chain when the monitor is turned off, which is sent as the DPMS off power mode (and on when assigned again).
  *
- * Build it with the WDK, see `BUILDING.md`. It's C++ because the IddCx headers are C++ only (enums with an underlying type, structs without typedef), but written as C:
+ * Built with MSVC and the WDK by `iddcx.mk`, and installed with `pspdisp-iddcx.inf` (see its header). It's C++ because the IddCx headers are C++ only (enums with an underlying type, structs without typedef), but written as C:
  * COM (D3D11 and DXGI) is used through the C vtables (CINTERFACE) and their macros (COBJMACROS), without the C++ helpers of D3D11 that need the C++ vtables (D3D11_NO_HELPERS),
  * and as in C++ the IIDs are references (`REFIID`), they're given without `&`.
  */
