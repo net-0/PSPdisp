@@ -73,7 +73,9 @@ typedef void (*PSPdispLostHandler) (gpointer data);
 GSource *pspdisp_display_connector_connect(PSPdispEDID edid, PSPdispConnectorFrameHandler frame_handler, PSPdispDPMSHandler dpms_handler, PSPdispLostHandler lost_handler, gpointer data);
 
 // The display connector of this platform, it implements `pspdisp_display_connector_connect()` and defines `PSPDISP_DISPLAY_CONNECTOR_NAME`
-#if defined(__linux__)
+#if defined(_WIN32)
+	#include "./connector/iddcx.c"
+#elif defined(__linux__)
 	#include "./connector/evdi.c"
 #else
 	#error "Unsupported platform"

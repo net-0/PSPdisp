@@ -60,7 +60,11 @@ typedef struct {
  * @return The path, free it with `g_free()`.
  */
 char *pspdisp_status_socket_path() {
+#if defined(_WIN32)
+	const char *folder = g_get_user_data_dir(); // The local application data, as there's no runtime folder
+#else
 	const char *folder = g_get_user_runtime_dir();
+#endif
 	return g_build_filename(folder, "pspdisp", "socket", NULL);
 }
 

@@ -48,7 +48,11 @@
 #define PSPDISP_USB_RETRY_INTERVAL    1000       // Time between two tries of a plugged PSP that didn't answer, in milliseconds
 
 // What gives the program access to a PSP it can't open
-#define PSPDISP_USB_ACCESS_HINT "install the udev rule (sudo make install) then plug the PSP again"
+#if defined(_WIN32)
+	#define PSPDISP_USB_ACCESS_HINT "use the \"WinUSB (PSP Type C)\" USB mode of the PSP app, or install the WinUSB driver for the PSP with Zadig"
+#else
+	#define PSPDISP_USB_ACCESS_HINT "install the udev rule (sudo make install) then plug the PSP again"
+#endif
 
 /**
  * @brief Watch of the PSPs being plugged and unplugged, created by `pspdisp_usb_watch_new()`.
