@@ -33,6 +33,7 @@
 
 #define PSPDISP_WASAPI_BUFFER_DURATION 2000000 // Size of the WASAPI buffer, 200 ms in units of 100 ns
 #define PSPDISP_WASAPI_POLL_INTERVAL   10      // Time between two reads of the WASAPI buffer, in milliseconds
+#define PSPDISP_WASAPI_SILENCE_DELAY   50000   // Time without data after which nothing plays, and silence fills it, in microseconds (several periods of WASAPI, 10 ms each)
 
 /**
  * @brief Audio connector using WASAPI, returned by `pspdisp_audio_connector_connect()`.
@@ -85,7 +86,7 @@ void pspdisp_audio_connector_wasapi_push(PSPdispAudioConnector *audio_connector,
 /**
  * @brief Body of the connector thread: start the loopback recording, then read it until stopped.
  *
- * Windows gives no data while nothing plays, so the chunks stop then.
+ * Windows gives no data while nothing plays, so the thread fills that time with silence itself: the chunks keep their pace, which is the pace of the frames (see `session.c`).
  *
  * @param audio_connector The connector.
  * @return Always `NULL`, nothing is given to `g_thread_join()`.
@@ -126,10 +127,14 @@ gpointer pspdisp_audio_connector_wasapi_thread(PSPdispAudioConnector *audio_conn
 	g_cond_signal(&audio_connector->cond);
 	g_mutex_unlock(&audio_connector->mutex);
 
+	gint64 quiet_start = g_get_monotonic_time(); // When the last data came
+	uint64_t quiet_frames = 0; // The frames of silence pushed since then
+
 	while (ready && !g_atomic_int_get(&audio_connector->stop)) {
 		Sleep(PSPDISP_WASAPI_POLL_INTERVAL);
 
 		UINT32 packet = 0;
+		gint64 now = g_get_monotonic_time();
 		while (SUCCEEDED(IAudioCaptureClient_GetNextPacketSize(capture, &packet)) && packet > 0) {
 			BYTE *data;
 			UINT32 frames;
@@ -138,6 +143,16 @@ gpointer pspdisp_audio_connector_wasapi_thread(PSPdispAudioConnector *audio_conn
 			if (FAILED(IAudioCaptureClient_GetBuffer(capture, &data, &frames, &flags, NULL, NULL))) break;
 			pspdisp_audio_connector_wasapi_push(audio_connector, (flags & AUDCLNT_BUFFERFLAGS_SILENT) ? NULL : data, frames * format.nBlockAlign);
 			IAudioCaptureClient_ReleaseBuffer(capture, frames);
+
+			quiet_start = now;
+			quiet_frames = 0;
+		}
+
+		// Nothing plays: the silence of the time since the last data, which wasn't pushed yet
+		if (now - quiet_start >= PSPDISP_WASAPI_SILENCE_DELAY) {
+			uint64_t frames = (uint64_t) (now - quiet_start) * audio_connector->sample_rate / G_USEC_PER_SEC;
+			pspdisp_audio_connector_wasapi_push(audio_connector, NULL, (uint32_t) (frames - quiet_frames) * format.nBlockAlign);
+			quiet_frames = frames;
 		}
 	}
 
