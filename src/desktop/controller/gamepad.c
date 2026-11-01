@@ -9,7 +9,7 @@
 /*
  * A virtual gamepad that the computer sees as a plugged controller, with the layout of an Xbox controller, so the games know it.
  *
- * Its implementation varies with the platform, chosen at compile time: uinput on Linux (`gamepad/uinput.c`), none yet on Windows (`gamepad/none.c`).
+ * Its implementation varies with the platform, chosen at compile time: uinput on Linux (`gamepad/uinput.c`), the PSPdisp virtual HID gamepad driver on Windows (`gamepad/vhid.c`).
  */
 
 #pragma once
@@ -82,7 +82,7 @@ void pspdisp_gamepad_destroy(PSPdispGamepad *gamepad);
 
 // The virtual gamepad of this platform, it declares `PSPdispGamepad`, implements its functions and defines `PSPDISP_GAMEPAD_NAME`
 #if defined(_WIN32)
-	#include "./gamepad/none.c"
+	#include "./gamepad/vhid.c"
 #elif defined(__linux__)
 	#include "./gamepad/uinput.c"
 #else

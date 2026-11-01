@@ -1,0 +1,95 @@
+; SPDX-License-Identifier: BSD-3-Clause
+;
+; pspdisp-vhid.inf - Virtual HID gamepad driver of PSPdisp (Windows)
+;
+; Copyright © 2026 Arthur Neto
+;
+; Installs the virtual HID gamepad driver (pspdisp-vhid.dll, see driver.c) on a root device (Root\PSPdispVhid), under Microsoft's HID class driver for UMDF (mshidumdf.sys),
+; whose state the virtual gamepad of the daemon writes (see ../vhid.c). Based on the INF of Microsoft's vhidmini2 sample (UMDF 2).
+; On Windows, `make` builds the package in build/vhid/ (see vhid.mk, it needs MSVC and the WDK): the driver, this INF and its catalog (pspdisp-vhid.cat),
+; signed with the self-signed certificate of the desktop, in build/winsign/ (pspdisp-winsign.cer, with its key in pspdisp-winsign.pfx, which must not be shared, see ../../../winsign.mk).
+; To install it, from an administrator PowerShell, in build/ (devcon creates the root device, which pnputil can't):
+;
+;   Import-Certificate -FilePath winsign\pspdisp-winsign.cer -CertStoreLocation Cert:\LocalMachine\Root
+;   Import-Certificate -FilePath winsign\pspdisp-winsign.cer -CertStoreLocation Cert:\LocalMachine\TrustedPublisher
+;   & "C:\Program Files (x86)\Windows Kits\10\Tools\10.0.26100.0\x64\devcon.exe" install vhid\pspdisp-vhid.inf Root\PSPdispVhid
+;
+; To remove it: `pnputil /remove-device /deviceid Root\PSPdispVhid`, then `pnputil /delete-driver oemNN.inf` (its name in `pnputil /enum-drivers`).
+
+[Version]
+Signature   = "$Windows NT$"
+Class       = HIDClass
+ClassGuid   = {745A17A0-74D3-11D0-B6FE-00A0C90F57DA}
+Provider    = %Provider%
+CatalogFile = pspdisp-vhid.cat
+DriverVer   = 11/01/2026,1.0.0.0
+PnpLockdown = 1
+
+[Manufacturer]
+%Provider% = PSPdisp, NTamd64
+
+; The root device of the driver, made by devcon (only x64, as the driver is only built for it)
+[PSPdisp.NTamd64]
+%Device% = PSPdisp_Install, Root\PSPdispVhid
+
+[SourceDisksNames]
+1 = %Disk%
+
+[SourceDisksFiles]
+pspdisp-vhid.dll = 1
+
+; The driver stays in the driver store (13)
+[DestinationDirs]
+PSPdisp_Copy = 13
+
+[PSPdisp_Copy]
+pspdisp-vhid.dll
+
+[PSPdisp_Install.NT]
+CopyFiles = PSPdisp_Copy
+
+[PSPdisp_Install.NT.HW]
+AddReg = PSPdisp_AddReg
+
+; The reflector of UMDF under the HID class driver, which passes the requests to the driver
+[PSPdisp_AddReg]
+HKR,,LowerFilters,0x00010008,"WUDFRd"
+
+; mshidumdf.sys is the function driver of the device (0x2 in the flags), the reflector a filter
+[PSPdisp_Install.NT.Services]
+AddService = WUDFRd, 0x000001f8, WUDFRd_ServiceInstall
+AddService = mshidumdf, 0x000001fa, mshidumdf_ServiceInstall
+
+[PSPdisp_Install.NT.Wdf]
+UmdfService                = PSPdispVhid, PSPdispVhid_Install
+UmdfServiceOrder           = PSPdispVhid
+UmdfKernelModeClientPolicy = AllowKernelModeClients
+UmdfFileObjectPolicy       = AllowNullAndUnknownFileObjects
+UmdfMethodNeitherAction    = Copy
+UmdfFsContextUsePolicy     = CanUseFsContext2
+
+; The version of UMDF the driver is built for (VHID_UMDF_VERSION of vhid.mk)
+[PSPdispVhid_Install]
+UmdfLibraryVersion = 2.15.0
+ServiceBinary      = %13%\pspdisp-vhid.dll
+
+[WUDFRd_ServiceInstall]
+DisplayName   = %WUDFRd%
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %12%\WUDFRd.sys
+
+[mshidumdf_ServiceInstall]
+DisplayName   = %mshidumdf%
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %12%\mshidumdf.sys
+
+[Strings]
+Provider  = "PSPdisp"
+Device    = "PSPdisp Virtual Gamepad"
+Disk      = "PSPdisp virtual HID gamepad driver"
+WUDFRd    = "Windows Driver Foundation - User-mode Driver Framework Reflector"
+mshidumdf = "Pass through driver for HID UMDF minidrivers"
