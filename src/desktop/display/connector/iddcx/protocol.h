@@ -9,14 +9,14 @@
  *****************************************************/
 
 /*
- * Protocol between the PSPdisp IddCx driver (`driver.c`, built with the WDK) and its display connector (`../iddcx.c`, built with MinGW).
+ * Protocol between the PSPdisp IddCx driver (`driver.cpp`, built with MSVC and the WDK) and its display connector (`../iddcx.c`, built with MinGW).
  *
  * The driver runs in Session 0, inside the UMDF host process of Windows, so the connector talks to it through device I/O control requests (IOCTLs) on its device interface.
  *
  * The connector connects a monitor with `IOCTL_PSPDISP_IDDCX_CONNECT`, then always keeps a `IOCTL_PSPDISP_IDDCX_WAIT` pending, which the driver completes with the next power change or asked frame.
  * It asks for each frame with `IOCTL_PSPDISP_IDDCX_REQUEST_FRAME`, like `evdi_request_update()` on EVDI, so the driver only copies the frames the connector wants.
  *
- * It's plain C11 on purpose, without `shared.h` or `edid.c`, because MSVC builds the driver and supports neither their C23 enums nor their GCC pragmas.
+ * It's plain C on purpose (also valid C++), without `shared.h` or `edid.c`, because MSVC builds the driver as C++ and supports neither their C23 enums nor their GCC pragmas.
  */
 
 #pragma once

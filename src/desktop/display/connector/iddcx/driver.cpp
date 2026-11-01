@@ -1,7 +1,7 @@
 /*****************************************************
  * SPDX-License-Identifier: BSD-3-Clause             *
  *                                                   *
- * driver.c - PSPdisp IddCx driver (Windows)         *
+ * driver.cpp - PSPdisp IddCx driver (Windows)       *
  *                                                   *
  * Copyright © 2026 Arthur Neto                      *
  *****************************************************/
@@ -20,11 +20,17 @@
  * The modes are the PSP resolution and it scaled up 2 or 4 times (from the EDID), whose frames the GPU scales down to the PSP resolution with their mip levels, so the frames sent are always 480x272.
  * Windows unassigns the swap chain when the monitor is turned off, which is sent as the DPMS off power mode (and on when assigned again).
  *
- * Build it with the WDK, see `BUILDING.md`, COM (D3D11 and DXGI) is used through the C vtable macros enabled by COBJMACROS.
+ * Build it with the WDK, see `BUILDING.md`. It's C++ because the IddCx headers are C++ only (enums with an underlying type, structs without typedef), but written as C:
+ * COM (D3D11 and DXGI) is used through the C vtables (CINTERFACE) and their macros (COBJMACROS), without the C++ helpers of D3D11 that need the C++ vtables (D3D11_NO_HELPERS),
+ * and as in C++ the IIDs are references (`REFIID`), they're given without `&`.
  */
 
+#define CINTERFACE
 #define COBJMACROS
+#define D3D11_NO_HELPERS
+#define WIN32_NO_STATUS // The STATUS_* codes come from <ntstatus.h>, included by <wdf.h>, not from <windows.h>
 #include <windows.h>
+#undef WIN32_NO_STATUS
 #include <bugcodes.h>
 #include <wudfwdm.h>
 #include <wdf.h>
@@ -153,11 +159,11 @@ void DisconnectMonitor(DEVICE_CONTEXT *ctx) {
 #define MAX_MODES 4 // Modes of the monitor at most, one per descriptor of the EDID
 #define MAX_LEVEL 3 // Mip levels at most from a mode down to the PSP resolution, so a mode is up to 8 times the PSP resolution
 
-typedef struct MODE {
+typedef struct EDID_MODE {
 	UINT32 Width, Height;             // Active pixels and lines
 	UINT32 TotalWidth, TotalHeight;   // With the blanking
 	UINT64 PixelClock;                // In Hz
-} MODE;
+} EDID_MODE;
 
 /**
  * @brief Tell the mip level of the PSP resolution in a frame of a size, the number of times the GPU halves the frame down to it.
@@ -180,14 +186,14 @@ int PspLevel(UINT32 width, UINT32 height) {
  * @param modes Where to write the modes, `MAX_MODES` at most, in the order of the EDID (so the first is the preferred one).
  * @return The number of modes, at least 1.
  */
-UINT32 ModesFromEdid(const UINT8 *edid, MODE *modes) {
+UINT32 ModesFromEdid(const UINT8 *edid, EDID_MODE *modes) {
 	UINT32 count = 0;
 
 	// The 4 descriptors of 18 bytes from byte 54
 	for (UINT32 i = 0; i < 4; i++) {
 		const UINT8 *t = edid + 54 + i * 18;
 		UINT32 clock = t[0] | (t[1] << 8); // In units of 10 kHz, 0 marks a display descriptor
-		MODE m;
+		EDID_MODE m;
 
 		m.Width       = t[2] | ((t[4] >> 4) << 8);
 		m.TotalWidth  = m.Width + (t[3] | ((t[4] & 0x0F) << 8));
@@ -216,7 +222,7 @@ UINT32 ModesFromEdid(const UINT8 *edid, MODE *modes) {
  * @param m The mode.
  * @param monitorMode If it's for a monitor mode, otherwise for a target mode (their vertical sync dividers differ).
  */
-void FillSignalInfo(DISPLAYCONFIG_VIDEO_SIGNAL_INFO *s, const MODE *m, BOOL monitorMode) {
+void FillSignalInfo(DISPLAYCONFIG_VIDEO_SIGNAL_INFO *s, const EDID_MODE *m, BOOL monitorMode) {
 	s->activeSize.cx = m->Width;
 	s->activeSize.cy = m->Height;
 	s->totalSize.cx = m->TotalWidth;
@@ -237,7 +243,7 @@ void FillSignalInfo(DISPLAYCONFIG_VIDEO_SIGNAL_INFO *s, const MODE *m, BOOL moni
  * @param m The mode.
  * @return The monitor mode.
  */
-IDDCX_MONITOR_MODE MakeMonitorMode(const MODE *m) {
+IDDCX_MONITOR_MODE MakeMonitorMode(const EDID_MODE *m) {
 	IDDCX_MONITOR_MODE mm = {0};
 	mm.Size = sizeof(mm);
 	mm.Origin = IDDCX_MONITOR_MODE_ORIGIN_MONITORDESCRIPTOR;
@@ -251,7 +257,7 @@ IDDCX_MONITOR_MODE MakeMonitorMode(const MODE *m) {
  * @param m The mode.
  * @return The target mode.
  */
-IDDCX_TARGET_MODE MakeTargetMode(const MODE *m) {
+IDDCX_TARGET_MODE MakeTargetMode(const EDID_MODE *m) {
 	IDDCX_TARGET_MODE tm = {0};
 	tm.Size = sizeof(tm);
 	FillSignalInfo(&tm.TargetVideoSignalInfo.targetVideoSignalInfo, m, FALSE);
@@ -424,10 +430,10 @@ void GrabberRunCore(FRAME_GRABBER *g) {
 	IDARG_IN_SWAPCHAINSETDEVICE setDevice = {0};
 
 	// D3D11 device on the adapter Windows renders this monitor with
-	if (FAILED(hr = CreateDXGIFactory2(0, &IID_IDXGIFactory5, (void **) &factory))
-	 || FAILED(hr = IDXGIFactory5_EnumAdapterByLuid(factory, g->RenderAdapter, &IID_IDXGIAdapter1, (void **) &adapter))
+	if (FAILED(hr = CreateDXGIFactory2(0, IID_IDXGIFactory5, (void **) &factory))
+	 || FAILED(hr = IDXGIFactory5_EnumAdapterByLuid(factory, g->RenderAdapter, IID_IDXGIAdapter1, (void **) &adapter))
 	 || FAILED(hr = D3D11CreateDevice((IDXGIAdapter *) adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, D3D11_CREATE_DEVICE_BGRA_SUPPORT, NULL, 0, D3D11_SDK_VERSION, &device, NULL, &ctx))
-	 || FAILED(hr = ID3D11Device_QueryInterface(device, &IID_IDXGIDevice, (void **) &dxgiDevice))) {
+	 || FAILED(hr = ID3D11Device_QueryInterface(device, IID_IDXGIDevice, (void **) &dxgiDevice))) {
 		Log(L"[PSPdisp] D3D11 device creation failed 0x%08X\n", hr);
 		goto cleanup;
 	}
@@ -464,7 +470,7 @@ void GrabberRunCore(FRAME_GRABBER *g) {
 			ID3D11Texture2D *tex = NULL;
 			BOOL fatal = FALSE;
 
-			if (SUCCEEDED(IDXGIResource_QueryInterface(surface, &IID_ID3D11Texture2D, (void **) &tex))) {
+			if (SUCCEEDED(IDXGIResource_QueryInterface(surface, IID_ID3D11Texture2D, (void **) &tex))) {
 				D3D11_TEXTURE2D_DESC d;
 				ID3D11Texture2D_GetDesc(tex, &d);
 
@@ -588,7 +594,7 @@ VOID EvtMonitorCleanup(WDFOBJECT obj) {
 /* Callbacks                                                                 */
 /* ------------------------------------------------------------------------- */
 
-DRIVER_INITIALIZE DriverEntry;
+extern "C" DRIVER_INITIALIZE DriverEntry; // Called by the stub of UMDF (WdfDriverStubUm.lib), with the C name
 EVT_WDF_DRIVER_DEVICE_ADD EvtDeviceAdd;
 EVT_WDF_OBJECT_CONTEXT_CLEANUP EvtDeviceCleanup;
 EVT_WDF_DEVICE_D0_ENTRY EvtD0Entry;
@@ -934,7 +940,7 @@ NTSTATUS EvtCommitModes(IDDCX_ADAPTER adapter, const IDARG_IN_COMMITMODES *in) {
  * @return `STATUS_SUCCESS`, or an error status if an argument is invalid.
  */
 NTSTATUS EvtParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION *in, IDARG_OUT_PARSEMONITORDESCRIPTION *out) {
-	MODE modes[MAX_MODES];
+	EDID_MODE modes[MAX_MODES];
 	UINT32 count;
 
 	if (in->MonitorDescription.DataSize < PSPDISP_IDDCX_EDID_SIZE) return STATUS_INVALID_PARAMETER;
@@ -960,7 +966,7 @@ NTSTATUS EvtParseMonitorDescription(const IDARG_IN_PARSEMONITORDESCRIPTION *in, 
  * @return Always `STATUS_SUCCESS`.
  */
 NTSTATUS EvtGetDefaultModes(IDDCX_MONITOR monitor, const IDARG_IN_GETDEFAULTDESCRIPTIONMODES *in, IDARG_OUT_GETDEFAULTDESCRIPTIONMODES *out) {
-	MODE modes[MAX_MODES];
+	EDID_MODE modes[MAX_MODES];
 	UINT32 count;
 
 	// Only called without an EDID, never for the PSPdisp monitors, but kept for completeness
@@ -986,7 +992,7 @@ NTSTATUS EvtGetDefaultModes(IDDCX_MONITOR monitor, const IDARG_IN_GETDEFAULTDESC
  * @return `STATUS_SUCCESS`, or `STATUS_BUFFER_TOO_SMALL` if an argument is invalid.
  */
 NTSTATUS EvtQueryTargetModes(IDDCX_MONITOR monitor, const IDARG_IN_QUERYTARGETMODES *in, IDARG_OUT_QUERYTARGETMODES *out) {
-	MODE modes[MAX_MODES];
+	EDID_MODE modes[MAX_MODES];
 	UINT32 count = ModesFromEdid(GetMonitorCtx(monitor)->Device->Edid, modes);
 
 	out->TargetModeBufferOutputCount = count;
