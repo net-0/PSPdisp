@@ -53,4 +53,9 @@ endif
 include $(DESKTOP_DIR)/daemon/Makefile
 include $(DESKTOP_DIR)/ui/Makefile
 
+# The IddCx driver of the virtual display (Windows)
+ifeq ($(PLATFORM),windows)
+include $(DESKTOP_DIR)/display/connector/iddcx/iddcx.mk
+endif
+
 all: $(ALL)

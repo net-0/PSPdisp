@@ -1,0 +1,90 @@
+; SPDX-License-Identifier: BSD-3-Clause
+;
+; pspdisp-iddcx.inf - IddCx driver of the PSPdisp virtual display (Windows)
+;
+; Copyright © 2026 Arthur Neto
+;
+; Installs the IddCx driver (pspdisp-iddcx.dll, see driver.cpp) on a root device (Root\PSPdispIddCx), a display adapter with no monitor,
+; whose monitor the display connector of the daemon connects (see ../iddcx.c). Based on the INF of Microsoft's IndirectDisplay sample.
+; On Windows, `make` builds the package in build/iddcx/ (see iddcx.mk, it needs MSVC and the WDK): the driver, this INF and its catalog (pspdisp-iddcx.cat),
+; signed with the self-signed certificate of the desktop, in build/winsign/ (pspdisp-winsign.cer, with its key in pspdisp-winsign.pfx, which must not be shared, see ../../../winsign.mk).
+; To install it, from an administrator PowerShell, in build/ (devcon creates the root device, which pnputil can't):
+;
+;   Import-Certificate -FilePath winsign\pspdisp-winsign.cer -CertStoreLocation Cert:\LocalMachine\Root
+;   Import-Certificate -FilePath winsign\pspdisp-winsign.cer -CertStoreLocation Cert:\LocalMachine\TrustedPublisher
+;   & "C:\Program Files (x86)\Windows Kits\10\Tools\10.0.26100.0\x64\devcon.exe" install iddcx\pspdisp-iddcx.inf Root\PSPdispIddCx
+;
+; To remove it: `pnputil /remove-device /deviceid Root\PSPdispIddCx`, then `pnputil /delete-driver oemNN.inf` (its name in `pnputil /enum-drivers`).
+
+[Version]
+Signature   = "$Windows NT$"
+Class       = Display
+ClassGuid   = {4D36E968-E325-11CE-BFC1-08002BE10318}
+ClassVer    = 2.0
+Provider    = %Provider%
+CatalogFile = pspdisp-iddcx.cat
+DriverVer   = 10/31/2026,1.0.0.0
+PnpLockdown = 1
+
+[Manufacturer]
+%Provider% = PSPdisp, NTamd64
+
+; The root device of the driver, made by devcon (only x64, as the driver is only built for it)
+[PSPdisp.NTamd64]
+%Device% = PSPdisp_Install, Root\PSPdispIddCx
+
+[SourceDisksNames]
+1 = %Disk%
+
+[SourceDisksFiles]
+pspdisp-iddcx.dll = 1
+
+; The driver stays in the driver store (13)
+[DestinationDirs]
+PSPdisp_Copy = 13
+
+[PSPdisp_Copy]
+pspdisp-iddcx.dll
+
+[PSPdisp_Install.NT]
+CopyFiles = PSPdisp_Copy
+
+[PSPdisp_Install.NT.HW]
+AddReg = PSPdisp_AddReg
+
+; The IddCx filter of Windows (IndirectKmd), the UMDF host of the driver alone, and the access of the users to the device,
+; as the daemon runs as the user (system and administrators: all, users: read and write)
+[PSPdisp_AddReg]
+HKR,,UpperFilters,0x00010000,"IndirectKmd"
+HKR,WUDF,DeviceGroupId,0x00000000,"PSPdispIddCxGroup"
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GRGW;;;BU)"
+
+; The reflector of UMDF, which passes the requests to the driver
+[PSPdisp_Install.NT.Services]
+AddService = WUDFRd, 0x000001fa, WUDFRd_ServiceInstall
+
+[PSPdisp_Install.NT.Wdf]
+UmdfService                = PSPdispIddCx, PSPdispIddCx_Install
+UmdfServiceOrder           = PSPdispIddCx
+UmdfKernelModeClientPolicy = AllowKernelModeClients
+UmdfHostProcessSharing     = ProcessSharingDisabled
+UmdfExtensions             = IddCx0102
+
+; The versions of UMDF and IddCx the driver is built for (IDDCX_UMDF_VERSION and IDDCX_CX_VERSION of iddcx.mk)
+[PSPdispIddCx_Install]
+UmdfLibraryVersion = 2.15.0
+ServiceBinary      = %13%\pspdisp-iddcx.dll
+UmdfExtensions     = IddCx0102
+
+[WUDFRd_ServiceInstall]
+DisplayName   = %WUDFRd%
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %12%\WUDFRd.sys
+
+[Strings]
+Provider = "PSPdisp"
+Device   = "PSPdisp Virtual Display"
+Disk     = "PSPdisp IddCx driver"
+WUDFRd   = "Windows Driver Foundation - User-mode Driver Framework Reflector"
