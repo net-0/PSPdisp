@@ -1,7 +1,7 @@
 # This file uses the IDDCX_* prefix, as it's included by the Makefile of the desktop (on Windows only), which gives it BIN_DIR, VERSION and FORCE,
 # and WINSIGN_DIR and WINSIGN_PFX_PASSWORD, the certificate that signs the driver and its catalog (see ../../../winsign.mk)
 #
-# The IddCx driver package of the virtual display (Windows, see pspdisp-iddcx.inf and BUILDING.md): the driver (pspdisp-iddcx.dll), its INF, and its catalog,
+# The IddCx driver package of the virtual display (Windows, see pspdisp-iddcx.inf): the driver (pspdisp-iddcx.dll), its INF, and its catalog,
 # the driver and the catalog signed with the self-signed certificate of the desktop.
 # The driver is built with MSVC (the Build Tools of Visual Studio, found with vswhere) against the WDK, as the WDK headers and libraries are made for it.
 
