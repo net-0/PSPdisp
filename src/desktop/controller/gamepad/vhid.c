@@ -9,11 +9,11 @@
 /*
  * The virtual gamepad is made by the PSPdisp virtual HID gamepad driver (`vhid/driver.c`), which must be installed first (see the header of `vhid/pspdisp-vhid.inf`).
  *
- * This gamepad only talks to the driver: it opens the control collection of the driver among the HID devices, and writes each state to its output report (see `vhid/protocol.h`).
- * The gamepad has the layout of an Xbox controller under DirectInput (its buttons in the same order, the directional pad as a hat), so the games that map it by its buttons know it.
+ * This gamepad only talks to the driver: it opens the driver among the HID devices, and writes each state to its own output report (see `vhid/protocol.h`).
+ * The driver is a DualShock 4 (the PlayStation 4 controller), so Steam and SDL know it as one, with nothing to configure.
  *
  * The driver's gamepad exists while the driver is installed, not only while it's plugged here: it's set at rest when it's unplugged.
- * And as a HID gamepad, the games that only read the Xbox controllers through XInput don't see it.
+ * And as a real DualShock 4, the games that only read the Xbox controllers through XInput don't see it, unless Steam Input stands for it.
  */
 
 #pragma once
@@ -22,7 +22,6 @@
 #include <windows.h>
 #include <cfgmgr32.h>
 #include <hidsdi.h>
-#include <hidpi.h>
 #include "./vhid/protocol.h"
 #include "../gamepad.c" // Its declarations (when `gamepad.c` includes this file, it already has them and this include is skipped)
 
@@ -32,28 +31,36 @@
  * @brief Virtual gamepad using the PSPdisp virtual HID gamepad driver, created by `pspdisp_gamepad_new()`.
  */
 struct PSPdispGamepad {
-	HANDLE device; // The control collection of the driver, opened for writing
+	HANDLE device; // The driver, opened for writing
 	PSPdispVhidReport report; // The report the driver has, to send only what changes
 };
 
 /**
- * @brief The buttons of the driver, with the gamepad button each one shows (0 for one the PSP doesn't have).
+ * @brief The buttons of the driver, with the gamepad button each one shows (the buttons the PSP doesn't have, e.g. L2, R2 or PS, aren't there).
  */
 const struct {
 	uint16_t bit; // The bit of the button in the report, `PSPDISP_VHID_BUTTON_*`
 	PSPdispGamepadButton button; // The button of the gamepad
 } pspdisp_gamepad_vhid_buttons[] = {
-	{ PSPDISP_VHID_BUTTON_A,     PSPDISP_GAMEPAD_BUTTON_SOUTH },
-	{ PSPDISP_VHID_BUTTON_B,     PSPDISP_GAMEPAD_BUTTON_EAST },
-	{ PSPDISP_VHID_BUTTON_X,     PSPDISP_GAMEPAD_BUTTON_WEST },
-	{ PSPDISP_VHID_BUTTON_Y,     PSPDISP_GAMEPAD_BUTTON_NORTH },
-	{ PSPDISP_VHID_BUTTON_LB,    PSPDISP_GAMEPAD_BUTTON_LEFT_SHOULDER },
-	{ PSPDISP_VHID_BUTTON_RB,    PSPDISP_GAMEPAD_BUTTON_RIGHT_SHOULDER },
-	{ PSPDISP_VHID_BUTTON_BACK,  PSPDISP_GAMEPAD_BUTTON_BACK },
-	{ PSPDISP_VHID_BUTTON_START, PSPDISP_GAMEPAD_BUTTON_START },
-	{ PSPDISP_VHID_BUTTON_LS,    0 }, // The left stick button
-	{ PSPDISP_VHID_BUTTON_RS,    0 }, // The right stick button
+	{ PSPDISP_VHID_BUTTON_CROSS,    PSPDISP_GAMEPAD_BUTTON_SOUTH },
+	{ PSPDISP_VHID_BUTTON_CIRCLE,   PSPDISP_GAMEPAD_BUTTON_EAST },
+	{ PSPDISP_VHID_BUTTON_SQUARE,   PSPDISP_GAMEPAD_BUTTON_WEST },
+	{ PSPDISP_VHID_BUTTON_TRIANGLE, PSPDISP_GAMEPAD_BUTTON_NORTH },
+	{ PSPDISP_VHID_BUTTON_L1,       PSPDISP_GAMEPAD_BUTTON_LEFT_SHOULDER },
+	{ PSPDISP_VHID_BUTTON_R1,       PSPDISP_GAMEPAD_BUTTON_RIGHT_SHOULDER },
+	{ PSPDISP_VHID_BUTTON_SHARE,    PSPDISP_GAMEPAD_BUTTON_BACK },
+	{ PSPDISP_VHID_BUTTON_OPTIONS,  PSPDISP_GAMEPAD_BUTTON_START },
 };
+
+/**
+ * @brief Get the position of a stick on an axis of the driver from the one of the gamepad.
+ *
+ * @param value The position, from -32768 to 32767, 0 when centered.
+ * @return The position, from 0 to 255, `PSPDISP_VHID_STICK_CENTERED` when centered.
+ */
+uint8_t pspdisp_gamepad_vhid_axis(int16_t value) {
+	return (uint8_t) ((value >> 8) + PSPDISP_VHID_STICK_CENTERED);
+}
 
 /**
  * @brief Get the position of the hat from the directional pad: 0 (up) to 7 clockwise by 45 degrees, or released.
@@ -78,39 +85,36 @@ uint8_t pspdisp_gamepad_vhid_hat(uint16_t buttons) {
  */
 void pspdisp_gamepad_vhid_report(const PSPdispGamepadState *state, PSPdispVhidReport *report) {
 	*report = (PSPdispVhidReport) { .report_id = PSPDISP_VHID_CONTROL_REPORT_ID };
-	report->state.x = state->left_x;
-	report->state.y = state->left_y;
+	report->state.lx = pspdisp_gamepad_vhid_axis(state->left_x);
+	report->state.ly = pspdisp_gamepad_vhid_axis(state->left_y);
+	report->state.rx = PSPDISP_VHID_STICK_CENTERED;
+	report->state.ry = PSPDISP_VHID_STICK_CENTERED;
 	report->state.hat = pspdisp_gamepad_vhid_hat(state->buttons);
 
 	for (size_t i = 0; i < G_N_ELEMENTS(pspdisp_gamepad_vhid_buttons); i++) {
-		if ((state->buttons & pspdisp_gamepad_vhid_buttons[i].button) != 0 && pspdisp_gamepad_vhid_buttons[i].button != 0)
+		if ((state->buttons & pspdisp_gamepad_vhid_buttons[i].button) != 0)
 			report->state.buttons |= pspdisp_gamepad_vhid_buttons[i].bit;
 	}
 }
 
 /**
- * @brief Tell if a HID device is the control collection of the driver: its vendor and product IDs, and its usage.
+ * @brief Tell if a HID device is the driver: the vendor and product IDs of a DualShock 4, with the product string of the driver.
  *
  * @param device The HID device, opened (even without access).
- * @return `true` if it's the control collection.
+ * @return `true` if it's the driver.
  */
-bool pspdisp_gamepad_vhid_is_control(HANDLE device) {
+bool pspdisp_gamepad_vhid_is_driver(HANDLE device) {
 	HIDD_ATTRIBUTES attributes = { .Size = sizeof(attributes) };
-	PHIDP_PREPARSED_DATA preparsed = NULL;
-	HIDP_CAPS caps = {0};
+	WCHAR product[64] = {0};
 
 	if (!HidD_GetAttributes(device, &attributes) || attributes.VendorID != PSPDISP_VHID_VENDOR_ID || attributes.ProductID != PSPDISP_VHID_PRODUCT_ID) return false;
-	if (!HidD_GetPreparsedData(device, &preparsed)) return false;
-
-	bool control = HidP_GetCaps(preparsed, &caps) == HIDP_STATUS_SUCCESS && caps.UsagePage == PSPDISP_VHID_CONTROL_USAGE_PAGE && caps.Usage == PSPDISP_VHID_CONTROL_USAGE;
-	HidD_FreePreparsedData(preparsed);
-	return control;
+	return HidD_GetProductString(device, product, sizeof(product) - sizeof(WCHAR)) && wcscmp(product, PSPDISP_VHID_PRODUCT_STRING) == 0;
 }
 
 /**
- * @brief Open the control collection of the driver, among the HID devices.
+ * @brief Open the driver, among the HID devices.
  *
- * @return The control collection, opened for writing, or `INVALID_HANDLE_VALUE` if it wasn't found or failed to open.
+ * @return The driver, opened for writing, or `INVALID_HANDLE_VALUE` if it wasn't found or failed to open.
  */
 HANDLE pspdisp_gamepad_vhid_open() {
 	GUID guid;
@@ -128,9 +132,9 @@ HANDLE pspdisp_gamepad_vhid_open() {
 			HANDLE device = CreateFileW(path, 0, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 			if (device == INVALID_HANDLE_VALUE) continue;
 
-			bool control = pspdisp_gamepad_vhid_is_control(device);
+			bool driver = pspdisp_gamepad_vhid_is_driver(device);
 			CloseHandle(device);
-			if (control)
+			if (driver)
 				found = CreateFileW(path, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 		}
 	}
@@ -142,7 +146,7 @@ HANDLE pspdisp_gamepad_vhid_open() {
 /**
  * @brief Write a report to the driver.
  *
- * @param device The control collection of the driver.
+ * @param device The driver.
  * @param report The report.
  * @return `true` if the driver took it.
  */
@@ -152,7 +156,7 @@ bool pspdisp_gamepad_vhid_write(HANDLE device, const PSPdispVhidReport *report) 
 }
 
 /**
- * @brief Plug the virtual gamepad: open the control collection of the driver, and set the gamepad at rest.
+ * @brief Plug the virtual gamepad: open the driver, and set the gamepad at rest.
  *
  * @param name Unused, the name the computer would show for it: the driver names it "PSPdisp Virtual Gamepad".
  * @param error Where to tell why it failed.

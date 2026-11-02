@@ -10,9 +10,10 @@
  * HID minidriver (UMDF 2) of the PSPdisp virtual gamepad, based on Microsoft's `hid/vhidmini2` sample.
  *
  * Windows loads it in Session 0, inside its UMDF host process, under its HID class driver: `mshidumdf.sys` (Microsoft's) passes it the requests of the HID class (the `IOCTL_HID_*` of `hidport.h`).
- * Its report descriptor has two top-level collections (see `protocol.h`), which Windows opens as two HID devices:
- *   - the gamepad: the HID class keeps read requests pending (`IOCTL_HID_READ_REPORT`), completed with the state of the gamepad when it changes;
- *   - the control: the daemon writes the state of the gamepad to its output report (`IOCTL_HID_WRITE_REPORT` or `IOCTL_HID_SET_OUTPUT_REPORT`).
+ * It's a DualShock 4 plugged by USB (see `protocol.h`):
+ *   - the HID class keeps read requests pending (`IOCTL_HID_READ_REPORT`), completed with the input report of the DualShock 4 when the state of the gamepad changes;
+ *   - the daemon writes the state of the gamepad to its own output report (`IOCTL_HID_WRITE_REPORT` or `IOCTL_HID_SET_OUTPUT_REPORT`), the output report of the DualShock 4 is ignored;
+ *   - the feature reports the games ask a DualShock 4 for are answered with fixed data (`IOCTL_HID_GET_FEATURE`).
  *
  * Built with MSVC and the WDK by `vhid.mk`, as C (unlike the IddCx driver, the WDF and HID headers are C), and installed with `pspdisp-vhid.inf` (see its header).
  */
@@ -48,33 +49,28 @@ void Log(const wchar_t *format, ...) {
 /* Descriptors                                                               */
 /* ------------------------------------------------------------------------- */
 
+#define DS4_CALIBRATION_REPORT_ID 0x02 // Feature report of the calibration of the motion sensors
+#define DS4_PAIRING_REPORT_ID     0x12 // Feature report of the MAC addresses of the controller and its host, only answered by USB (SDL knows the connection by it)
+#define DS4_MAC_REPORT_ID         0x81 // Feature report of the MAC address of the controller
+
 /**
- * @brief Report descriptor: the gamepad (input report, as an Xbox controller under DirectInput) and the control collection (output report), see `protocol.h`.
+ * @brief Report descriptor: the one of the DualShock 4, with only the feature reports the games ask for, and the output report of the daemon, see `protocol.h`.
  */
 const UINT8 ReportDescriptor[] = {
-	// The gamepad
 	0x05, 0x01,             // Usage Page (Generic Desktop)
 	0x09, 0x05,             // Usage (Game Pad)
 	0xA1, 0x01,             // Collection (Application)
-	0x85, PSPDISP_VHID_GAMEPAD_REPORT_ID, // Report ID
-	0x09, 0x01,             //   Usage (Pointer)
-	0xA1, 0x00,             //   Collection (Physical): the sticks
-	0x09, 0x30,             //     Usage (X)
-	0x09, 0x31,             //     Usage (Y)
-	0x09, 0x33,             //     Usage (Rx)
-	0x09, 0x34,             //     Usage (Ry)
-	0x16, 0x00, 0x80,       //     Logical Minimum (-32768)
-	0x26, 0xFF, 0x7F,       //     Logical Maximum (32767)
-	0x75, 0x10,             //     Report Size (16)
-	0x95, 0x04,             //     Report Count (4)
-	0x81, 0x02,             //     Input (Data, Variable, Absolute)
-	0xC0,                   //   End Collection
-	0x09, 0x32,             //   Usage (Z): the left trigger
-	0x09, 0x35,             //   Usage (Rz): the right trigger
+
+	// The input report of the DualShock 4
+	0x85, PSPDISP_VHID_DS4_INPUT_REPORT_ID, // Report ID
+	0x09, 0x30,             //   Usage (X): the left stick
+	0x09, 0x31,             //   Usage (Y)
+	0x09, 0x32,             //   Usage (Z): the right stick
+	0x09, 0x35,             //   Usage (Rz)
 	0x15, 0x00,             //   Logical Minimum (0)
 	0x26, 0xFF, 0x00,       //   Logical Maximum (255)
 	0x75, 0x08,             //   Report Size (8)
-	0x95, 0x02,             //   Report Count (2)
+	0x95, 0x04,             //   Report Count (4)
 	0x81, 0x02,             //   Input (Data, Variable, Absolute)
 	0x09, 0x39,             //   Usage (Hat Switch): the directional pad
 	0x15, 0x00,             //   Logical Minimum (0)
@@ -82,39 +78,68 @@ const UINT8 ReportDescriptor[] = {
 	0x35, 0x00,             //   Physical Minimum (0)
 	0x46, 0x3B, 0x01,       //   Physical Maximum (315)
 	0x65, 0x14,             //   Unit (Degrees)
-	0x75, 0x08,             //   Report Size (8)
+	0x75, 0x04,             //   Report Size (4)
 	0x95, 0x01,             //   Report Count (1)
 	0x81, 0x42,             //   Input (Data, Variable, Absolute, Null State): out of 0-7 when released
 	0x65, 0x00,             //   Unit (None)
 	0x45, 0x00,             //   Physical Maximum (0)
 	0x05, 0x09,             //   Usage Page (Button)
 	0x19, 0x01,             //   Usage Minimum (1)
-	0x29, 0x0A,             //   Usage Maximum (10)
+	0x29, 0x0E,             //   Usage Maximum (14)
 	0x15, 0x00,             //   Logical Minimum (0)
 	0x25, 0x01,             //   Logical Maximum (1)
 	0x75, 0x01,             //   Report Size (1)
-	0x95, 0x0A,             //   Report Count (10)
+	0x95, 0x0E,             //   Report Count (14)
 	0x81, 0x02,             //   Input (Data, Variable, Absolute)
+	0x06, 0x00, 0xFF,       //   Usage Page (Vendor Defined 0xFF00)
+	0x09, 0x20,             //   Usage (0x20): the counter of the reports
+	0x15, 0x00,             //   Logical Minimum (0)
+	0x25, 0x7F,             //   Logical Maximum (127)
 	0x75, 0x06,             //   Report Size (6)
 	0x95, 0x01,             //   Report Count (1)
-	0x81, 0x03,             //   Input (Constant): the padding of the buttons to 16 bits
-	0xC0,                   // End Collection
-
-	// The control collection, the daemon writes the state of the gamepad to its output report
-	0x06, 0x00, 0xFF,       // Usage Page (Vendor Defined 0xFF00), PSPDISP_VHID_CONTROL_USAGE_PAGE
-	0x09, 0x01,             // Usage (1), PSPDISP_VHID_CONTROL_USAGE
-	0xA1, 0x01,             // Collection (Application)
-	0x85, PSPDISP_VHID_CONTROL_REPORT_ID, // Report ID
-	0x09, 0x02,             //   Usage (2)
+	0x81, 0x02,             //   Input (Data, Variable, Absolute)
+	0x05, 0x01,             //   Usage Page (Generic Desktop)
+	0x09, 0x33,             //   Usage (Rx): the left trigger
+	0x09, 0x34,             //   Usage (Ry): the right trigger
 	0x15, 0x00,             //   Logical Minimum (0)
 	0x26, 0xFF, 0x00,       //   Logical Maximum (255)
 	0x75, 0x08,             //   Report Size (8)
-	0x95, sizeof(PSPdispVhidState), // Report Count, the bytes of `PSPdispVhidState`
+	0x95, 0x02,             //   Report Count (2)
+	0x81, 0x02,             //   Input (Data, Variable, Absolute)
+	0x06, 0x00, 0xFF,       //   Usage Page (Vendor Defined 0xFF00)
+	0x09, 0x21,             //   Usage (0x21): the rest (the timestamp, the motion sensors, the battery, the touchpad)
+	0x95, 0x36,             //   Report Count (54)
+	0x81, 0x02,             //   Input (Data, Variable, Absolute)
+
+	// The output report of the DualShock 4 (the rumble and the light bar)
+	0x85, PSPDISP_VHID_DS4_OUTPUT_REPORT_ID, // Report ID
+	0x09, 0x22,             //   Usage (0x22)
+	0x95, PSPDISP_VHID_OUTPUT_REPORT_SIZE - 1, // Report Count
+	0x91, 0x02,             //   Output (Data, Variable, Absolute)
+
+	// The feature reports of the DualShock 4 the games ask for
+	0x85, DS4_CALIBRATION_REPORT_ID, // Report ID
+	0x09, 0x24,             //   Usage (0x24)
+	0x95, 0x24,             //   Report Count (36)
+	0xB1, 0x02,             //   Feature (Data, Variable, Absolute)
+	0x85, DS4_PAIRING_REPORT_ID, // Report ID
+	0x09, 0x25,             //   Usage (0x25)
+	0x95, 0x0F,             //   Report Count (15)
+	0xB1, 0x02,             //   Feature (Data, Variable, Absolute)
+	0x85, DS4_MAC_REPORT_ID, // Report ID
+	0x09, 0x26,             //   Usage (0x26)
+	0x95, 0x06,             //   Report Count (6)
+	0xB1, 0x02,             //   Feature (Data, Variable, Absolute)
+
+	// The output report of the daemon, the state of the gamepad
+	0x85, PSPDISP_VHID_CONTROL_REPORT_ID, // Report ID
+	0x09, 0x50,             //   Usage (0x50)
+	0x95, PSPDISP_VHID_OUTPUT_REPORT_SIZE - 1, // Report Count
 	0x91, 0x02,             //   Output (Data, Variable, Absolute)
 	0xC0,                   // End Collection
 };
 
-static_assert(sizeof(PSPdispVhidState) == 13, "The state must have the layout of the report descriptor");
+static_assert(sizeof(PSPdispVhidReport) == PSPDISP_VHID_OUTPUT_REPORT_SIZE, "The report of the daemon must have the size of the output reports");
 
 /**
  * @brief HID descriptor, which gives the size of the report descriptor to the HID class.
@@ -122,11 +147,43 @@ static_assert(sizeof(PSPdispVhidState) == 13, "The state must have the layout of
 const HID_DESCRIPTOR HidDescriptor = {
 	sizeof(HID_DESCRIPTOR), // bLength
 	0x21,                   // bDescriptorType, HID
-	0x0100,                 // bcdHID, HID 1.0
+	0x0111,                 // bcdHID, HID 1.11 (as the DualShock 4)
 	0x00,                   // bCountry, not localized
 	0x01,                   // bNumDescriptors
 	{ { 0x22, sizeof(ReportDescriptor) } }, // DescriptorList, the report descriptor
 };
+
+#pragma pack(push, 1)
+
+/**
+ * @brief Feature report of the calibration of the motion sensors (by USB), little-endian: the ranges of a real DualShock 4, so the games don't divide by 0 (the sensors stay at 0).
+ */
+typedef struct {
+	UINT8 ReportId;      // `DS4_CALIBRATION_REPORT_ID`
+	INT16 GyroBias[3];   // Pitch, yaw and roll
+	INT16 GyroRange[6];  // Pitch plus and minus, yaw plus and minus, roll plus and minus
+	INT16 GyroSpeed[2];  // Plus and minus
+	INT16 AccelRange[6]; // X plus and minus, Y plus and minus, Z plus and minus
+	UINT8 Reserved[2];
+} DS4_CALIBRATION;
+
+#pragma pack(pop)
+
+static_assert(sizeof(DS4_CALIBRATION) == 37, "The calibration must have the size of its feature report");
+
+const DS4_CALIBRATION Calibration = {
+	DS4_CALIBRATION_REPORT_ID,
+	{ 0, 0, 0 },
+	{ 8192, -8192, 8192, -8192, 8192, -8192 },
+	{ 540, 540 },
+	{ 8192, -8192, 8192, -8192, 8192, -8192 },
+	{ 0, 0 },
+};
+
+/**
+ * @brief MAC address of the gamepad, least significant byte first as in the feature reports: 02:50:53:50:44:53, locally administered ("\x02PSPDS").
+ */
+const UINT8 MacAddress[6] = { 0x53, 0x44, 0x50, 0x53, 0x50, 0x02 };
 
 /* ------------------------------------------------------------------------- */
 /* Context                                                                   */
@@ -137,32 +194,61 @@ const HID_DESCRIPTOR HidDescriptor = {
  */
 typedef struct DEVICE_CONTEXT {
 	WDFQUEUE ReadQueue;     // Manual queue of the pending read requests of the HID class
+	LARGE_INTEGER Start;    // When the device was created, the origin of the timestamps of the input reports (from `QueryPerformanceCounter()`)
+	LARGE_INTEGER Frequency; // The frequency of `QueryPerformanceCounter()`
 	SRWLOCK Lock;           // Guards the fields below
 	PSPdispVhidState State; // The state of the gamepad, the newest one written by the daemon
 	bool Undelivered;       // If `State` changed since the last read request completed
+	UINT8 Counter;          // The counter of the input reports, 6 bits
 } DEVICE_CONTEXT;
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(DEVICE_CONTEXT, GetDeviceCtx);
 
 /**
- * @brief Fill an input report of the gamepad with its state.
+ * @brief Fill the input report of the DualShock 4 with the state of the gamepad, and count it.
  *
- * @param ctx The device, locked.
- * @param report The report to fill.
+ * @param ctx The device, locked exclusively.
+ * @param report The report to fill, `PSPDISP_VHID_DS4_INPUT_REPORT_SIZE` bytes.
  */
-void FillInputReport(const DEVICE_CONTEXT *ctx, PSPdispVhidReport *report) {
-	report->report_id = PSPDISP_VHID_GAMEPAD_REPORT_ID;
-	report->state = ctx->State;
+void FillInputReport(DEVICE_CONTEXT *ctx, UINT8 *report) {
+	const PSPdispVhidState *state = &ctx->State;
+	LARGE_INTEGER now;
+
+	// The timestamp, in units of 16/3 microseconds, wrapping on 16 bits
+	QueryPerformanceCounter(&now);
+	LONGLONG ticks = now.QuadPart - ctx->Start.QuadPart;
+	ULONGLONG microseconds = (ULONGLONG) (ticks / ctx->Frequency.QuadPart) * 1000000 + (ULONGLONG) (ticks % ctx->Frequency.QuadPart) * 1000000 / ctx->Frequency.QuadPart;
+	UINT16 timestamp = (UINT16) (microseconds * 3 / 16);
+
+	memset(report, 0, PSPDISP_VHID_DS4_INPUT_REPORT_SIZE);
+	report[0] = PSPDISP_VHID_DS4_INPUT_REPORT_ID;
+	report[1] = state->lx;
+	report[2] = state->ly;
+	report[3] = state->rx;
+	report[4] = state->ry;
+	report[5] = (UINT8) ((state->hat & 0x0F) | (state->buttons & 0x0F) << 4); // The hat, then square, cross, circle and triangle
+	report[6] = (UINT8) (state->buttons >> 4);                                 // L1, R1, L2, R2, share, options, L3 and R3
+	report[7] = (UINT8) ((state->buttons >> 12 & 0x03) | ctx->Counter << 2);  // PS and the touchpad click, then the counter
+	report[8] = state->l2;
+	report[9] = state->r2;
+	report[10] = (UINT8) timestamp;
+	report[11] = (UINT8) (timestamp >> 8);
+	report[30] = 0x1B; // The battery: plugged (0x10), and full (11)
+	report[33] = 1;    // One packet of the touchpad
+	report[35] = 0x80; // No first finger on the touchpad
+	report[39] = 0x80; // No second finger
+
+	ctx->Counter = (ctx->Counter + 1) & 0x3F;
 }
 
 /**
  * @brief Complete a read request with the input report of the gamepad.
  *
- * @param ctx The device, locked.
+ * @param ctx The device, locked exclusively.
  * @param request The `IOCTL_HID_READ_REPORT` request.
  */
 void CompleteRead(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
-	PSPdispVhidReport *report;
-	NTSTATUS s = WdfRequestRetrieveOutputBuffer(request, sizeof(*report), (PVOID *) &report, NULL);
+	UINT8 *report;
+	NTSTATUS s = WdfRequestRetrieveOutputBuffer(request, PSPDISP_VHID_DS4_INPUT_REPORT_SIZE, (PVOID *) &report, NULL);
 
 	if (!NT_SUCCESS(s)) {
 		WdfRequestComplete(request, s);
@@ -170,7 +256,7 @@ void CompleteRead(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
 	}
 	FillInputReport(ctx, report);
 	ctx->Undelivered = false;
-	WdfRequestCompleteWithInformation(request, STATUS_SUCCESS, sizeof(*report));
+	WdfRequestCompleteWithInformation(request, STATUS_SUCCESS, PSPDISP_VHID_DS4_INPUT_REPORT_SIZE);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -217,36 +303,44 @@ void QueueRead(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
 }
 
 /**
- * @brief Take the state the daemon wrote to the output report of the control collection, and deliver it to a pending read request.
+ * @brief Take an output report: the state the daemon wrote, delivered to a pending read request, or the rumble and the light bar of the DualShock 4, ignored.
  *
  * In UMDF, the report (with its ID first) is in the input buffer of the request.
  *
  * @param ctx The device.
  * @param request The `IOCTL_HID_WRITE_REPORT` or `IOCTL_HID_SET_OUTPUT_REPORT` request.
  */
-void WriteState(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
-	const PSPdispVhidReport *report;
+void WriteReport(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
+	const UINT8 *report;
 	size_t size = 0;
 	WDFREQUEST read;
-	NTSTATUS s = WdfRequestRetrieveInputBuffer(request, sizeof(*report), (PVOID *) &report, &size);
+	NTSTATUS s = WdfRequestRetrieveInputBuffer(request, 1, (PVOID *) &report, &size);
 
 	if (!NT_SUCCESS(s)) {
 		WdfRequestComplete(request, s);
 		return;
 	}
-	if (report->report_id != PSPDISP_VHID_CONTROL_REPORT_ID) {
-		WdfRequestComplete(request, STATUS_INVALID_PARAMETER);
-		return;
+
+	switch (report[0]) {
+		case PSPDISP_VHID_CONTROL_REPORT_ID:
+			if (size < 1 + sizeof(PSPdispVhidState)) {
+				WdfRequestComplete(request, STATUS_INVALID_BUFFER_SIZE);
+				return;
+			}
+			AcquireSRWLockExclusive(&ctx->Lock);
+			memcpy(&ctx->State, &((const PSPdispVhidReport *) report)->state, sizeof(ctx->State));
+			ctx->Undelivered = true;
+			if (NT_SUCCESS(WdfIoQueueRetrieveNextRequest(ctx->ReadQueue, &read)))
+				CompleteRead(ctx, read);
+			ReleaseSRWLockExclusive(&ctx->Lock);
+			break;
+		case PSPDISP_VHID_DS4_OUTPUT_REPORT_ID:
+			break; // The gamepad has no rumble nor light bar
+		default:
+			WdfRequestComplete(request, STATUS_INVALID_PARAMETER);
+			return;
 	}
-
-	AcquireSRWLockExclusive(&ctx->Lock);
-	ctx->State = report->state;
-	ctx->Undelivered = true;
-	if (NT_SUCCESS(WdfIoQueueRetrieveNextRequest(ctx->ReadQueue, &read)))
-		CompleteRead(ctx, read);
-	ReleaseSRWLockExclusive(&ctx->Lock);
-
-	WdfRequestCompleteWithInformation(request, STATUS_SUCCESS, sizeof(*report));
+	WdfRequestCompleteWithInformation(request, STATUS_SUCCESS, size);
 }
 
 /**
@@ -256,14 +350,52 @@ void WriteState(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
  * @param request The `IOCTL_HID_GET_INPUT_REPORT` request.
  */
 void GetInputReport(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
-	PSPdispVhidReport report;
+	UINT8 report[PSPDISP_VHID_DS4_INPUT_REPORT_SIZE];
 
-	AcquireSRWLockShared(&ctx->Lock);
-	report.report_id = PSPDISP_VHID_GAMEPAD_REPORT_ID;
-	report.state = ctx->State;
-	ReleaseSRWLockShared(&ctx->Lock);
+	AcquireSRWLockExclusive(&ctx->Lock);
+	FillInputReport(ctx, report);
+	ReleaseSRWLockExclusive(&ctx->Lock);
 
-	CompleteWithData(request, &report, sizeof(report));
+	CompleteWithData(request, report, sizeof(report));
+}
+
+/**
+ * @brief Answer a feature report of the DualShock 4 (`HidD_GetFeature()`), with fixed data.
+ *
+ * In UMDF, the report ID is in the input buffer of the request, and the report (with its ID first) goes to its output buffer.
+ *
+ * @param request The `IOCTL_HID_GET_FEATURE` request.
+ */
+void GetFeature(WDFREQUEST request) {
+	const UINT8 *id;
+	UINT8 report[16] = {0};
+	NTSTATUS s = WdfRequestRetrieveInputBuffer(request, 1, (PVOID *) &id, NULL);
+
+	if (!NT_SUCCESS(s)) {
+		WdfRequestComplete(request, s);
+		return;
+	}
+
+	switch (*id) {
+		case DS4_CALIBRATION_REPORT_ID:
+			CompleteWithData(request, &Calibration, sizeof(Calibration));
+			break;
+		case DS4_PAIRING_REPORT_ID:
+			report[0] = DS4_PAIRING_REPORT_ID;
+			memcpy(&report[1], MacAddress, sizeof(MacAddress)); // Then 3 unknown bytes, and the MAC address of the host, none
+			report[7] = 0x08;
+			report[8] = 0x25;
+			CompleteWithData(request, report, 16);
+			break;
+		case DS4_MAC_REPORT_ID:
+			report[0] = DS4_MAC_REPORT_ID;
+			memcpy(&report[1], MacAddress, sizeof(MacAddress));
+			CompleteWithData(request, report, 7);
+			break;
+		default:
+			WdfRequestComplete(request, STATUS_INVALID_PARAMETER);
+			break;
+	}
 }
 
 /**
@@ -284,7 +416,7 @@ void GetString(WDFREQUEST request) {
 	}
 	switch (*id & 0xFFFF) {
 		case HID_STRING_ID_IMANUFACTURER: text = L"PSPdisp"; break;
-		case HID_STRING_ID_IPRODUCT:      text = L"PSPdisp Virtual Gamepad"; break;
+		case HID_STRING_ID_IPRODUCT:      text = PSPDISP_VHID_PRODUCT_STRING; break;
 		default:
 			WdfRequestComplete(request, STATUS_INVALID_PARAMETER); // No serial number
 			return;
@@ -328,10 +460,13 @@ VOID EvtIoDeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outLen, size_
 			break;
 		case IOCTL_HID_WRITE_REPORT:
 		case IOCTL_HID_SET_OUTPUT_REPORT:
-			WriteState(ctx, request);
+			WriteReport(ctx, request);
 			break;
 		case IOCTL_HID_GET_INPUT_REPORT:
 			GetInputReport(ctx, request);
+			break;
+		case IOCTL_HID_GET_FEATURE:
+			GetFeature(request);
 			break;
 		case IOCTL_HID_GET_STRING:
 			GetString(request);
@@ -341,7 +476,7 @@ VOID EvtIoDeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outLen, size_
 			WdfRequestComplete(request, STATUS_SUCCESS);
 			break;
 		default:
-			WdfRequestComplete(request, STATUS_NOT_IMPLEMENTED); // E.g. the feature reports, the indexed strings, which the gamepad doesn't have
+			WdfRequestComplete(request, STATUS_NOT_IMPLEMENTED); // E.g. setting the feature reports, the indexed strings, which the gamepad doesn't have
 			break;
 	}
 }
@@ -393,8 +528,11 @@ NTSTATUS EvtDeviceAdd(WDFDRIVER driver, PWDFDEVICE_INIT deviceInit) {
 	}
 
 	ctx = GetDeviceCtx(device);
+	QueryPerformanceFrequency(&ctx->Frequency);
+	QueryPerformanceCounter(&ctx->Start);
 	InitializeSRWLock(&ctx->Lock);
-	ctx->State.hat = PSPDISP_VHID_HAT_CENTERED; // At rest, the rest of the state is 0
+	ctx->State.lx = ctx->State.ly = ctx->State.rx = ctx->State.ry = PSPDISP_VHID_STICK_CENTERED; // At rest, the rest of the state is 0
+	ctx->State.hat = PSPDISP_VHID_HAT_CENTERED;
 	ctx->Undelivered = true; // The first read gets the state at rest
 
 	// The HID requests, in parallel, as the reads stay pending
