@@ -36,7 +36,8 @@ gboolean pspdisp_daemon_system_on_stop(gpointer data) {
 /**
  * @brief Handle a console event, called by Windows on a thread of its own: Ctrl+C, Ctrl+Break and the closing of the console stop the daemon on the main thread.
  *
- * When the console is closed, Windows ends the process soon after this returns, maybe before the daemon finished stopping.
+ * When the console is closed, Windows ends the process as soon as this returns, so it never returns then: the process ends when the daemon finished stopping (`main()` returns),
+ * or when Windows gives up waiting (about 5 seconds).
  *
  * @param event The console event.
  * @return `TRUE` if it was handled.
@@ -45,6 +46,8 @@ BOOL WINAPI pspdisp_daemon_system_on_console(DWORD event) {
 	if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT && event != CTRL_CLOSE_EVENT) return FALSE;
 
 	g_idle_add(pspdisp_daemon_system_on_stop, NULL);
+	if (event == CTRL_CLOSE_EVENT)
+		Sleep(INFINITE);
 	return TRUE;
 }
 
