@@ -40,8 +40,9 @@ ALL += $(BIN_DIR)/pspdisp-daemon$(EXE)
 # The binary of the daemon, the name the desktop app looks for in the PATH to start it (see ui/app.c)
 # The .d file is fixed even when the build fails, as it's written before the link (e.g. on Windows, the link fails while the daemon runs, its .exe is locked),
 # otherwise make wouldn't read it back and wouldn't rebuild the daemon anymore; the status of the build is kept
-$(BIN_DIR)/pspdisp-daemon$(EXE): $(DAEMON_DIR)/main.c | $(BIN_DIR) $(DEP_DIR)
-	$(CC) $(DAEMON_CPPFLAGS) -MMD -MP -MF $(DEP_DIR)/$(@F).d -MT $@ $(DAEMON_CFLAGS) $(DAEMON_LDFLAGS) $< -o $@ $(DAEMON_LDLIBS); \
+# On Windows, it links the icon of the programs (WINICON_OBJ, see ../winicon.mk), empty elsewhere
+$(BIN_DIR)/pspdisp-daemon$(EXE): $(DAEMON_DIR)/main.c $(WINICON_OBJ) | $(BIN_DIR) $(DEP_DIR)
+	$(CC) $(DAEMON_CPPFLAGS) -MMD -MP -MF $(DEP_DIR)/$(@F).d -MT $@ $(DAEMON_CFLAGS) $(DAEMON_LDFLAGS) $< $(WINICON_OBJ) -o $@ $(DAEMON_LDLIBS); \
 	status=$$?; \
 	if [ -f $(DEP_DIR)/$(@F).d ]; then $(DEP_FIX) $(DEP_DIR)/$(@F).d; fi; \
 	exit $$status

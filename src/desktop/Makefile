@@ -49,6 +49,11 @@ ifeq ($(PLATFORM),windows)
 include $(DESKTOP_DIR)/winsign.mk
 endif
 
+# The icon the programs link (Windows), before the programs, as they use its variables in their prerequisites
+ifeq ($(PLATFORM),windows)
+include $(DESKTOP_DIR)/winicon.mk
+endif
+
 # The programs
 include $(DESKTOP_DIR)/daemon/Makefile
 include $(DESKTOP_DIR)/ui/Makefile
