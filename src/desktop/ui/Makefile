@@ -38,9 +38,13 @@ UI_LDLIBS   := $(LDLIBS) $(shell pkg-config --libs $(UI_PACKAGES)) $(UI_PLATFORM
 ALL += $(BIN_DIR)/pspdisp-ui$(EXE) $(BIN_DIR)/com.pspdisp.ui.svg $(BIN_DIR)/com.pspdisp.ui.desktop
 
 # The binary of the app
+# The .d file is fixed even when the build fails, as it's written before the link (e.g. on Windows, the link fails while the app runs, its .exe is locked),
+# otherwise make wouldn't read it back and wouldn't rebuild the app anymore; the status of the build is kept
 $(BIN_DIR)/pspdisp-ui$(EXE): $(UI_DIR)/main.c | $(BIN_DIR) $(DEP_DIR)
-	$(CC) $(UI_CPPFLAGS) -MMD -MP -MF $(DEP_DIR)/$(@F).d -MT $@ $(UI_CFLAGS) $(UI_LDFLAGS) $< -o $@ $(UI_LDLIBS)
-	$(DEP_FIX) $(DEP_DIR)/$(@F).d
+	$(CC) $(UI_CPPFLAGS) -MMD -MP -MF $(DEP_DIR)/$(@F).d -MT $@ $(UI_CFLAGS) $(UI_LDFLAGS) $< -o $@ $(UI_LDLIBS); \
+	status=$$?; \
+	if [ -f $(DEP_DIR)/$(@F).d ]; then $(DEP_FIX) $(DEP_DIR)/$(@F).d; fi; \
+	exit $$status
 
 # The icon of the app
 $(BIN_DIR)/com.pspdisp.ui.svg: $(UI_DIR)/com.pspdisp.ui.svg
