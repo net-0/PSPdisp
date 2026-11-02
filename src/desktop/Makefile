@@ -63,4 +63,9 @@ ifeq ($(PLATFORM),windows)
 include $(DESKTOP_DIR)/display/connector/iddcx/iddcx.mk
 endif
 
+# The virtual HID gamepad driver (Windows)
+ifeq ($(PLATFORM),windows)
+include $(DESKTOP_DIR)/controller/gamepad/vhid/vhid.mk
+endif
+
 all: $(ALL)

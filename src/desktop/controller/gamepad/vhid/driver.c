@@ -12,8 +12,8 @@
  * Windows loads it in Session 0, inside its UMDF host process, under its HID class driver: `mshidumdf.sys` (Microsoft's) passes it the requests of the HID class (the `IOCTL_HID_*` of `hidport.h`).
  * It's a DualShock 4 plugged by USB (see `protocol.h`):
  *   - the HID class keeps read requests pending (`IOCTL_HID_READ_REPORT`), completed with the input report of the DualShock 4 when the state of the gamepad changes;
- *   - the daemon writes the state of the gamepad to its own output report (`IOCTL_HID_WRITE_REPORT` or `IOCTL_HID_SET_OUTPUT_REPORT`), the output report of the DualShock 4 is ignored;
- *   - the feature reports the games ask a DualShock 4 for are answered with fixed data (`IOCTL_HID_GET_FEATURE`).
+ *   - the daemon writes the state of the gamepad to its own output report (`IOCTL_HID_WRITE_REPORT` or `IOCTL_UMDF_HID_SET_OUTPUT_REPORT`), the output report of the DualShock 4 is ignored;
+ *   - the feature reports the games ask a DualShock 4 for are answered with fixed data (`IOCTL_UMDF_HID_GET_FEATURE`).
  *
  * Built with MSVC and the WDK by `vhid.mk`, as C (unlike the IddCx driver, the WDF and HID headers are C), and installed with `pspdisp-vhid.inf` (see its header).
  */
@@ -308,7 +308,7 @@ void QueueRead(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
  * In UMDF, the report (with its ID first) is in the input buffer of the request.
  *
  * @param ctx The device.
- * @param request The `IOCTL_HID_WRITE_REPORT` or `IOCTL_HID_SET_OUTPUT_REPORT` request.
+ * @param request The `IOCTL_HID_WRITE_REPORT` or `IOCTL_UMDF_HID_SET_OUTPUT_REPORT` request.
  */
 void WriteReport(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
 	const UINT8 *report;
@@ -347,7 +347,7 @@ void WriteReport(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
  * @brief Answer the input report asked directly (`HidD_GetInputReport()`), with the state of the gamepad.
  *
  * @param ctx The device.
- * @param request The `IOCTL_HID_GET_INPUT_REPORT` request.
+ * @param request The `IOCTL_UMDF_HID_GET_INPUT_REPORT` request.
  */
 void GetInputReport(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
 	UINT8 report[PSPDISP_VHID_DS4_INPUT_REPORT_SIZE];
@@ -364,7 +364,7 @@ void GetInputReport(DEVICE_CONTEXT *ctx, WDFREQUEST request) {
  *
  * In UMDF, the report ID is in the input buffer of the request, and the report (with its ID first) goes to its output buffer.
  *
- * @param request The `IOCTL_HID_GET_FEATURE` request.
+ * @param request The `IOCTL_UMDF_HID_GET_FEATURE` request.
  */
 void GetFeature(WDFREQUEST request) {
 	const UINT8 *id;
@@ -458,14 +458,15 @@ VOID EvtIoDeviceControl(WDFQUEUE queue, WDFREQUEST request, size_t outLen, size_
 		case IOCTL_HID_READ_REPORT:
 			QueueRead(ctx, request);
 			break;
+		// In UMDF, `HidD_SetOutputReport()`, `HidD_GetInputReport()` and `HidD_GetFeature()` come as the `IOCTL_UMDF_HID_*` of `hidport.h`, not as the `IOCTL_HID_*` of `hidclass.h`
 		case IOCTL_HID_WRITE_REPORT:
-		case IOCTL_HID_SET_OUTPUT_REPORT:
+		case IOCTL_UMDF_HID_SET_OUTPUT_REPORT:
 			WriteReport(ctx, request);
 			break;
-		case IOCTL_HID_GET_INPUT_REPORT:
+		case IOCTL_UMDF_HID_GET_INPUT_REPORT:
 			GetInputReport(ctx, request);
 			break;
-		case IOCTL_HID_GET_FEATURE:
+		case IOCTL_UMDF_HID_GET_FEATURE:
 			GetFeature(request);
 			break;
 		case IOCTL_HID_GET_STRING:
