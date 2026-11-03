@@ -26,4 +26,3 @@ desktop: $(BIN_DIR) $(DEP_DIR) FORCE
 		VERSION=$(VERSION) \
 		BIN_DIR=$(BIN_DIR) \
 		DEP_DIR=$(DEP_DIR)
-

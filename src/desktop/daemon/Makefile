@@ -1,7 +1,7 @@
 # This file uses the DAEMON_* prefix to avoid conflicts with other Makefile variables when it's included
 
 # The folder of this file, absolute (and not ending with /), as the paths in an included Makefile are relative to where make runs
-DAEMON_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+DAEMON_SRC_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 # CC has a default of make (cc), so check that it was given (on the command line, in the environment or in a Makefile)
 ifneq ($(filter default undefined,$(origin CC)),)
@@ -41,7 +41,7 @@ ALL += $(BIN_DIR)/pspdisp-daemon$(EXE)
 # The .d file is fixed even when the build fails, as it's written before the link (e.g. on Windows, the link fails while the daemon runs, its .exe is locked),
 # otherwise make wouldn't read it back and wouldn't rebuild the daemon anymore; the status of the build is kept
 # On Windows, it links the icon of the programs (WINICON_OBJ, see ../winicon.mk), empty elsewhere
-$(BIN_DIR)/pspdisp-daemon$(EXE): $(DAEMON_DIR)/main.c $(WINICON_OBJ) | $(BIN_DIR) $(DEP_DIR)
+$(BIN_DIR)/pspdisp-daemon$(EXE): $(DAEMON_SRC_DIR)/main.c $(WINICON_OBJ) | $(BIN_DIR) $(DEP_DIR)
 	$(CC) $(DAEMON_CPPFLAGS) -MMD -MP -MF $(DEP_DIR)/$(@F).d -MT $@ $(DAEMON_CFLAGS) $(DAEMON_LDFLAGS) $< $(WINICON_OBJ) -o $@ $(DAEMON_LDLIBS); \
 	status=$$?; \
 	if [ -f $(DEP_DIR)/$(@F).d ]; then $(DEP_FIX) $(DEP_DIR)/$(@F).d; fi; \
@@ -52,5 +52,5 @@ $(BIN_DIR)/pspdisp-daemon$(EXE): $(DAEMON_DIR)/main.c $(WINICON_OBJ) | $(BIN_DIR
 
 # The WinUSB driver package of the PSP (Windows), until the PSP app says itself that it uses WinUSB (see winusb.mk)
 ifeq ($(PLATFORM),windows)
-include $(DAEMON_DIR)/winusb.mk
+include $(DAEMON_SRC_DIR)/winusb.mk
 endif

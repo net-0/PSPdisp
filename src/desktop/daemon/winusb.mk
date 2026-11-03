@@ -1,4 +1,4 @@
-# This file uses the DAEMON_* prefix, as it's included by the Makefile of the daemon (on Windows only), which gives it DAEMON_DIR, BIN_DIR, VERSION and FORCE,
+# This file uses the DAEMON_* prefix, as it's included by the Makefile of the daemon (on Windows only), which gives it DAEMON_SRC_DIR, BIN_DIR, VERSION and FORCE,
 # and WINSIGN_DIR and WINSIGN_PFX_PASSWORD, the certificate that signs the catalog (see ../winsign.mk)
 #
 # The WinUSB driver package of the PSP (Windows, see pspdisp-winusb.inf): the INF, and its catalog, signed with the self-signed certificate of the desktop.
@@ -21,7 +21,7 @@ $(WINUSB_DIR):
 	mkdir -p $@
 
 # The INF, with the date and the version of the build, made again on each run (FORCE)
-$(WINUSB_DIR)/pspdisp-winusb.inf: $(DAEMON_DIR)/pspdisp-winusb.inf FORCE | $(WINUSB_DIR)
+$(WINUSB_DIR)/pspdisp-winusb.inf: $(DAEMON_SRC_DIR)/pspdisp-winusb.inf FORCE | $(WINUSB_DIR)
 	sed -E "s|^(DriverVer *= *)[0-9/]+,[0-9.]+|\1$$(date +%m/%d/%Y),$(DAEMON_WINUSB_VERSION)|" $< > $@
 
 # The catalog of the INF, made by Inf2Cat for the systems of /os, and signed by signtool with the certificate of the desktop (pspdisp-winsign.pfx)

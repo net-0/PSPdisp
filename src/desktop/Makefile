@@ -1,7 +1,7 @@
 # This file uses the DESKTOP_* prefix to avoid conflicts with other Makefile variables when it's included
 
 # The folder of this file, absolute (and not ending with /), as the paths in an included Makefile are relative to where make runs
-DESKTOP_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+DESKTOP_SRC_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 ifeq ($(strip $(BIN_DIR)),)
 $(error BIN_DIR is not set, give the folder of the binaries (e.g. make BIN_DIR=build), or run make from the root of the repository)
@@ -25,7 +25,7 @@ EXE := $(if $(filter windows,$(PLATFORM)),.exe)
 # The command that fixes the .d file of a binary, run after it's compiled (`$(DEP_FIX) <file>.d`):
 # with the make of MSYS2 (whose paths are /c/...), MSYS2 gives the paths to the Windows compiler as C:/..., which it writes in the .d files,
 # but that make can't read them back (the colon of the drive ends the target), so the binaries weren't rebuilt when a file they include changed
-ifneq ($(and $(filter windows,$(PLATFORM)),$(filter /%,$(DESKTOP_DIR))),)
+ifneq ($(and $(filter windows,$(PLATFORM)),$(filter /%,$(DESKTOP_SRC_DIR))),)
 DEP_FIX := sed -i -E 's\#(^| )([A-Za-z]):/\#\1/\L\2\E/\#g'
 else
 DEP_FIX := :
@@ -46,26 +46,26 @@ ALL :=
 
 # The certificate that signs the driver packages (Windows), before the programs, as their packages use its variables in their prerequisites
 ifeq ($(PLATFORM),windows)
-include $(DESKTOP_DIR)/winsign.mk
+include $(DESKTOP_SRC_DIR)/winsign.mk
 endif
 
 # The icon the programs link (Windows), before the programs, as they use its variables in their prerequisites
 ifeq ($(PLATFORM),windows)
-include $(DESKTOP_DIR)/winicon.mk
+include $(DESKTOP_SRC_DIR)/winicon.mk
 endif
 
 # The programs
-include $(DESKTOP_DIR)/daemon/Makefile
-include $(DESKTOP_DIR)/ui/Makefile
+include $(DESKTOP_SRC_DIR)/daemon/Makefile
+include $(DESKTOP_SRC_DIR)/ui/Makefile
 
 # The IddCx driver of the virtual display (Windows)
 ifeq ($(PLATFORM),windows)
-include $(DESKTOP_DIR)/display/connector/iddcx/iddcx.mk
+include $(DESKTOP_SRC_DIR)/display/connector/iddcx/iddcx.mk
 endif
 
 # The virtual HID gamepad driver (Windows)
 ifeq ($(PLATFORM),windows)
-include $(DESKTOP_DIR)/controller/gamepad/vhid/vhid.mk
+include $(DESKTOP_SRC_DIR)/controller/gamepad/vhid/vhid.mk
 endif
 
 all: $(ALL)
