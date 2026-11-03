@@ -1,5 +1,5 @@
-# This file uses the IDDCX_* prefix, as it's included by the Makefile of the desktop (on Windows only), which gives it BIN_DIR, VERSION and FORCE,
-# and WINSIGN_DIR and WINSIGN_PFX_PASSWORD, the certificate that signs the driver and its catalog (see ../../../winsign.mk)
+# This file uses the IDDCX_* prefix, as it's included by the Makefile of the desktop (on Windows only), which gives it BIN_DIR and FORCE,
+# WINSIGN_DIR and WINSIGN_PFX_PASSWORD, the certificate that signs the driver and its catalog (see ../../../winsign.mk), and WINDRIVER_VERSION, the version of the package (see ../../../windriver.mk)
 #
 # The IddCx driver package of the virtual display (Windows, see pspdisp-iddcx.inf): the driver (pspdisp-iddcx.dll), its INF, and its catalog,
 # the driver and the catalog signed with the self-signed certificate of the desktop.
@@ -41,10 +41,6 @@ IDDCX_CXXFLAGS := /nologo /std:c++17 /W3 /O2 /MT /LD \
 IDDCX_LDFLAGS := /SUBSYSTEM:WINDOWS
 IDDCX_LDLIBS := WdfDriverStubUm.lib IddCxStub.lib OneCoreUAP.lib ntdll.lib d3d11.lib dxgi.lib dxguid.lib avrt.lib
 
-# The version of the package, which Windows compares to pick the newest one: DriverVer takes four numbers (v0.6.2-89-gfbedb26 gives 0.6.2.89, v0.6.2 gives 0.6.2.0)
-IDDCX_VERSION_WORDS := $(subst -, ,$(subst ., ,$(patsubst v%,%,$(VERSION))))
-IDDCX_PACKAGE_VERSION := $(or $(word 1,$(IDDCX_VERSION_WORDS)),0).$(or $(word 2,$(IDDCX_VERSION_WORDS)),0).$(or $(word 3,$(IDDCX_VERSION_WORDS)),0).$(or $(word 4,$(IDDCX_VERSION_WORDS)),0)
-
 ALL += $(IDDCX_DIR)/pspdisp-iddcx.dll $(IDDCX_DIR)/pspdisp-iddcx.inf $(IDDCX_DIR)/pspdisp-iddcx.cat
 
 # The folder of the package, created before a file is made in it (each file has it as an order-only prerequisite)
@@ -67,7 +63,7 @@ $(IDDCX_DIR)/pspdisp-iddcx.dll: $(IDDCX_SRC_DIR)/driver.cpp $(IDDCX_SRC_DIR)/pro
 
 # The INF, with the date and the version of the build, made again on each run (FORCE)
 $(IDDCX_DIR)/pspdisp-iddcx.inf: $(IDDCX_SRC_DIR)/pspdisp-iddcx.inf FORCE | $(IDDCX_DIR)
-	sed -E "s|^(DriverVer *= *)[0-9/]+,[0-9.]+|\1$$(date +%m/%d/%Y),$(IDDCX_PACKAGE_VERSION)|" $< > $@
+	sed -E "s|^(DriverVer *= *)[0-9/]+,[0-9.]+|\1$$(date +%m/%d/%Y),$(WINDRIVER_VERSION)|" $< > $@
 
 # The catalog of the INF and the driver, made by Inf2Cat for the systems of /os (the driver is only built for x64), and signed by signtool with the certificate of the desktop (pspdisp-winsign.pfx)
 $(IDDCX_DIR)/pspdisp-iddcx.cat: $(IDDCX_DIR)/pspdisp-iddcx.inf $(IDDCX_DIR)/pspdisp-iddcx.dll $(WINSIGN_DIR)/pspdisp-winsign.pfx | $(IDDCX_DIR)

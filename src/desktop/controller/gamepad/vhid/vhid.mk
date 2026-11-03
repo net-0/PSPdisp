@@ -1,5 +1,5 @@
-# This file uses the VHID_* prefix, as it's included by the Makefile of the desktop (on Windows only), which gives it BIN_DIR, VERSION and FORCE,
-# and WINSIGN_DIR and WINSIGN_PFX_PASSWORD, the certificate that signs the driver and its catalog (see ../../../winsign.mk)
+# This file uses the VHID_* prefix, as it's included by the Makefile of the desktop (on Windows only), which gives it BIN_DIR and FORCE,
+# WINSIGN_DIR and WINSIGN_PFX_PASSWORD, the certificate that signs the driver and its catalog (see ../../../winsign.mk), and WINDRIVER_VERSION, the version of the package (see ../../../windriver.mk)
 #
 # The virtual HID gamepad driver package (Windows, see pspdisp-vhid.inf): the driver (pspdisp-vhid.dll), its INF, and its catalog,
 # the driver and the catalog signed with the self-signed certificate of the desktop.
@@ -39,10 +39,6 @@ VHID_CFLAGS := /nologo /TC /std:c17 /W3 /O2 /MT /LD \
 VHID_LDFLAGS := /SUBSYSTEM:WINDOWS
 VHID_LDLIBS := WdfDriverStubUm.lib OneCoreUAP.lib ntdll.lib
 
-# The version of the package, which Windows compares to pick the newest one: DriverVer takes four numbers (v0.6.2-89-gfbedb26 gives 0.6.2.89, v0.6.2 gives 0.6.2.0)
-VHID_VERSION_WORDS := $(subst -, ,$(subst ., ,$(patsubst v%,%,$(VERSION))))
-VHID_PACKAGE_VERSION := $(or $(word 1,$(VHID_VERSION_WORDS)),0).$(or $(word 2,$(VHID_VERSION_WORDS)),0).$(or $(word 3,$(VHID_VERSION_WORDS)),0).$(or $(word 4,$(VHID_VERSION_WORDS)),0)
-
 ALL += $(VHID_DIR)/pspdisp-vhid.dll $(VHID_DIR)/pspdisp-vhid.inf $(VHID_DIR)/pspdisp-vhid.cat
 
 # The folder of the package, created before a file is made in it (each file has it as an order-only prerequisite)
@@ -65,7 +61,7 @@ $(VHID_DIR)/pspdisp-vhid.dll: $(VHID_SRC_DIR)/driver.c $(VHID_SRC_DIR)/protocol.
 
 # The INF, with the date and the version of the build, made again on each run (FORCE)
 $(VHID_DIR)/pspdisp-vhid.inf: $(VHID_SRC_DIR)/pspdisp-vhid.inf FORCE | $(VHID_DIR)
-	sed -E "s|^(DriverVer *= *)[0-9/]+,[0-9.]+|\1$$(date +%m/%d/%Y),$(VHID_PACKAGE_VERSION)|" $< > $@
+	sed -E "s|^(DriverVer *= *)[0-9/]+,[0-9.]+|\1$$(date +%m/%d/%Y),$(WINDRIVER_VERSION)|" $< > $@
 
 # The catalog of the INF and the driver, made by Inf2Cat for the systems of /os (the driver is only built for x64), and signed by signtool with the certificate of the desktop (pspdisp-winsign.pfx)
 $(VHID_DIR)/pspdisp-vhid.cat: $(VHID_DIR)/pspdisp-vhid.inf $(VHID_DIR)/pspdisp-vhid.dll $(WINSIGN_DIR)/pspdisp-winsign.pfx | $(VHID_DIR)

@@ -49,6 +49,11 @@ ifeq ($(PLATFORM),windows)
 include $(DESKTOP_SRC_DIR)/winsign.mk
 endif
 
+# The version of the driver packages (Windows), before the programs, as the one of the daemon (WinUSB) uses it
+ifeq ($(PLATFORM),windows)
+include $(DESKTOP_SRC_DIR)/windriver.mk
+endif
+
 # The icon the programs link (Windows), before the programs, as they use its variables in their prerequisites
 ifeq ($(PLATFORM),windows)
 include $(DESKTOP_SRC_DIR)/winicon.mk
