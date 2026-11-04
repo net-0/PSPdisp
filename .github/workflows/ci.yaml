@@ -1,12 +1,9 @@
 name: CI
 
-# Builds the desktop programs (and on Windows, the driver packages) with `make`, as a developer does, on each push and pull request
 on:
-  push:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
