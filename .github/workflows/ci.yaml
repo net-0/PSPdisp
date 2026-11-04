@@ -1,0 +1,82 @@
+name: CI
+
+# Builds the desktop programs (and on Windows, the driver packages) with `make`, as a developer does, on each push and pull request
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Build on Linux
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    env:
+      EVDI_VERSION: v1.15.1
+    steps:
+      - name: Install the dependencies
+        run: |
+          pacman -Syu --noconfirm --needed \
+            base-devel \
+            git \
+            pkgconf \
+            glib2 \
+            gtk4 \
+            libgusb \
+            libpipewire \
+            libjpeg-turbo \
+            libxkbcommon \
+            libxkbcommon-x11 \
+            libxcb \
+            wayland \
+            libdrm
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install libevdi
+        run: |
+          git clone --depth 1 --branch "$EVDI_VERSION" https://github.com/DisplayLink/evdi.git /tmp/evdi
+          make -C /tmp/evdi/library
+          make -C /tmp/evdi/library install PREFIX=/usr
+          install -Dm644 /tmp/evdi/library/evdi_lib.h /usr/include/evdi_lib.h
+      - name: Build
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make desktop
+
+  windows:
+    name: Build on Windows
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install MSYS2 and the dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make
+            git
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-pkgconf
+            mingw-w64-ucrt-x86_64-glib2
+            mingw-w64-ucrt-x86_64-gtk4
+            mingw-w64-ucrt-x86_64-libgusb
+            mingw-w64-ucrt-x86_64-libjpeg-turbo
+            mingw-w64-ucrt-x86_64-imagemagick
+            mingw-w64-ucrt-x86_64-openssl
+      - name: Build
+        run: |
+          git config --global --add safe.directory "$(cygpath -u "$GITHUB_WORKSPACE")"
+          make desktop
