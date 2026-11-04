@@ -6,9 +6,6 @@ DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BIN_DIR := $(DIR)/build
 DEP_DIR := $(BIN_DIR)/dep
 
-# The extension of the programs: .exe when the compiler builds for Windows (MinGW, e.g. the UCRT64 shell of MSYS2)
-EXE := $(if $(findstring mingw,$(shell gcc -dumpmachine)),.exe)
-
 .PHONY: all desktop
 
 # Note: "make" will run only the first entry, which must be all files
