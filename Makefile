@@ -3,18 +3,23 @@ VERSION != git describe --tags
 # The folder of this file, absolute (and not ending with /), as the sub-makes run from other folders (-C)
 DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
-BIN_DIR = $(DIR)/build
-DEP_DIR = $(BIN_DIR)/dep
+BIN_DIR := $(DIR)/build
+DEP_DIR := $(BIN_DIR)/dep
 
-.PHONY: all
+.PHONY: all desktop
 
 # Note: "make" will run only the first entry, which must be all files
-all: $(BIN_DIR)/pspdisp-daemon $(BIN_DIR)/pspdisp-ui $(BIN_DIR)/com.pspdisp.ui.svg $(BIN_DIR)/com.pspdisp.ui.desktop
+all: desktop
+
+# Always out of date, so the targets that depend on it are rebuilt on each run
+FORCE:
 
 # The folders of the build, created before a program is built in them (each program has them as order-only prerequisites)
 $(BIN_DIR) $(DEP_DIR):
 	mkdir -p $@
 
-$(BIN_DIR)/pspdisp-daemon $(BIN_DIR)/pspdisp-ui $(BIN_DIR)/com.pspdisp.ui.svg $(BIN_DIR)/com.pspdisp.ui.desktop: $(BIN_DIR) $(DEP_DIR)
-	$(MAKE) -C $(DIR)/src/desktop $@ VERSION=$(VERSION) BIN_DIR=$(BIN_DIR) DEP_DIR=$(DEP_DIR)
-
+desktop: $(BIN_DIR) $(DEP_DIR) FORCE
+	$(MAKE) -k -C $(DIR)/src/desktop \
+		VERSION=$(VERSION) \
+		BIN_DIR=$(BIN_DIR) \
+		DEP_DIR=$(DEP_DIR)

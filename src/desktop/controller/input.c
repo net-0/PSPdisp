@@ -119,7 +119,9 @@ bool pspdisp_input_mouse_move(PSPdispInput *input, int32_t x, int32_t y);
 bool pspdisp_input_mouse_wheel(PSPdispInput *input, int32_t steps);
 
 // The virtual keyboard and mouse of this platform, it declares `PSPdispInput`, implements its functions and defines `PSPDISP_INPUT_NAME`
-#if defined(__linux__)
+#if defined(_WIN32)
+	#include "./input/sendinput.c"
+#elif defined(__linux__)
 	#include "./input/uinput.c"
 #else
 	#error "Unsupported platform: there's no virtual keyboard and mouse for it yet"
