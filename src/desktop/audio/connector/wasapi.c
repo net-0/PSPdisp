@@ -97,6 +97,7 @@ gpointer pspdisp_audio_connector_wasapi_thread(PSPdispAudioConnector *audio_conn
 	IAudioClient *client = NULL;
 	IAudioCaptureClient *capture = NULL;
 	HRESULT result = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+	bool com = SUCCEEDED(result); // COM to uninitialize at the end, only if it was initialized (S_FALSE too, it counts as a call)
 
 	// 16-bit stereo at the asked sample rate, Windows converts the mix to it
 	WAVEFORMATEX format = {
@@ -109,7 +110,7 @@ gpointer pspdisp_audio_connector_wasapi_thread(PSPdispAudioConnector *audio_conn
 		.cbSize = 0,
 	};
 
-	bool ready = SUCCEEDED(result)
+	bool ready = com
 		&& SUCCEEDED(result = CoCreateInstance(&CLSID_MMDeviceEnumerator, NULL, CLSCTX_ALL, &IID_IMMDeviceEnumerator, (void **) &enumerator))
 		&& SUCCEEDED(result = IMMDeviceEnumerator_GetDefaultAudioEndpoint(enumerator, eRender, eConsole, &device))
 		&& SUCCEEDED(result = IMMDevice_Activate(device, &IID_IAudioClient, CLSCTX_ALL, NULL, (void **) &client))
@@ -166,6 +167,7 @@ gpointer pspdisp_audio_connector_wasapi_thread(PSPdispAudioConnector *audio_conn
 		IMMDevice_Release(device);
 	if (enumerator != NULL)
 		IMMDeviceEnumerator_Release(enumerator);
+	if (com)
 	CoUninitialize();
 	return NULL;
 }
@@ -198,7 +200,8 @@ PSPdispAudioConnector *pspdisp_audio_connector_connect(PSPdispModel model, PSPdi
 	audio_connector->thread = g_thread_new("pspdisp-audio", (GThreadFunc) pspdisp_audio_connector_wasapi_thread, audio_connector);
 
 	g_mutex_lock(&audio_connector->mutex);
-	while (!audio_connector->started) g_cond_wait(&audio_connector->cond, &audio_connector->mutex);
+	while (!audio_connector->started)
+		g_cond_wait(&audio_connector->cond, &audio_connector->mutex);
 	bool ready = audio_connector->ready;
 	g_mutex_unlock(&audio_connector->mutex);
 
