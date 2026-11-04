@@ -102,5 +102,11 @@ int pspdisp_gtk_application_run(int argc, char **argv) {
  * @return The exit status of the app (see `pspdisp_gtk_application_run()`).
  */
 int main(int argc, char **argv) {
+#if defined(_WIN32)
+	// GTK draws with the CPU (cairo) on Windows, unless GSK_RENDERER says otherwise: its OpenGL renderer needs libEGL there, which MSYS2 doesn't have,
+	// and its Vulkan one crashes on the laptops with 2 GPUs, whose AMD layer (VK_LAYER_AMD_switchable_graphics) makes vkEnumeratePhysicalDevices() return VK_INCOMPLETE
+	// (and it would wake up the dedicated GPU, which Vulkan lists first, for a settings window)
+	g_setenv("GSK_RENDERER", "cairo", FALSE);
+#endif
 	return pspdisp_gtk_application_run(argc, argv);
 }

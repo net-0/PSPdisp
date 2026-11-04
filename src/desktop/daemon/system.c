@@ -52,7 +52,9 @@ int64_t pspdisp_daemon_system_pid();
 bool pspdisp_daemon_system_runs_as_administrator();
 
 // The implementation of this platform
-#if defined(__linux__)
+#if defined(_WIN32)
+	#include "./system/windows.c"
+#elif defined(__linux__)
 	#include "./system/linux.c"
 #else
 	#error "Unsupported platform"

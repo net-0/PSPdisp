@@ -29,9 +29,15 @@
 #include "../../shared.h"
 
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/file.h>
-#include <sys/stat.h>
+#ifndef _WIN32
+	#include <unistd.h>
+	#include <sys/file.h>
+	#include <sys/stat.h>
+#else
+	#include <io.h>
+	#include <windef.h>
+	#include <fileapi.h> // Only the file API, as a <windows.h> here would come before the <winsock2.h> of the "WLAN" page of the desktop app
+#endif
 
 // PSPDISP_VERSION: version of the desktop app and the daemon (given by the build)
 #ifndef PSPDISP_VERSION
@@ -615,9 +621,16 @@ void pspdisp_settings_install_defaults(const char *dir) {
 int pspdisp_settings_lock(const char *dir, bool exclusive) {
 	char *path = g_build_filename(dir, PSPDISP_SETTINGS_LOCK_NAME, NULL);
 
+#ifndef _WIN32
 	int lock = g_open(path, O_RDWR | O_CREAT | O_CLOEXEC, 0644);
 	if (lock >= 0)
 		flock(lock, exclusive ? LOCK_EX : LOCK_SH);
+#else
+	int lock = g_open(path, O_RDWR | O_CREAT | O_NOINHERIT, 0644); // Not inherited by the processes started (e.g. the daemon by the desktop app), as O_CLOEXEC
+	OVERLAPPED overlapped = {0};
+	if (lock >= 0)
+		LockFileEx((HANDLE) _get_osfhandle(lock), exclusive ? LOCKFILE_EXCLUSIVE_LOCK : 0, 0, 1, 0, &overlapped); // Waits as flock(), the byte locked is past the end of the empty file, which Windows allows
+#endif
 
 	g_free(path);
 	return lock;
@@ -631,6 +644,10 @@ int pspdisp_settings_lock(const char *dir, bool exclusive) {
 void pspdisp_settings_unlock(int lock) {
 	if (lock < 0) return;
 
+#ifdef _WIN32
+	OVERLAPPED overlapped = {0};
+	UnlockFileEx((HANDLE) _get_osfhandle(lock), 0, 1, 0, &overlapped); // Closing it unlocks too, but maybe later
+#endif
 	close(lock); // Also unlocks on Unix
 }
 

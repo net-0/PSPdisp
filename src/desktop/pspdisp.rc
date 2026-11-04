@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: BSD-3-Clause
+//
+// pspdisp.rc - Resources of the desktop programs (Windows)
+//
+// Copyright © 2026 Arthur Neto
+//
+// Linked into the programs by their Makefiles (see winicon.mk, which makes the .ico from ui/com.pspdisp.ui.svg).
+
+// The icon of the program, the first one, which Explorer and the taskbar show
+1 ICON "com.pspdisp.ui.ico"
