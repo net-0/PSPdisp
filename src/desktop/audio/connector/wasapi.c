@@ -168,7 +168,7 @@ gpointer pspdisp_audio_connector_wasapi_thread(PSPdispAudioConnector *audio_conn
 	if (enumerator != NULL)
 		IMMDeviceEnumerator_Release(enumerator);
 	if (com)
-	CoUninitialize();
+		CoUninitialize();
 	return NULL;
 }
 

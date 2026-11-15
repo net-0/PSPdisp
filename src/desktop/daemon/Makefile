@@ -20,19 +20,21 @@ endif
 
 # The libraries: the USB host and the JPEG frames, then by platform:
 # - Linux: the sound (PipeWire), the keyboard layout of the desktop (see controller/input/keymap.c) and the display connector (EVDI)
-# - Windows: the display connector and the virtual gamepad (CfgMgr32, to find their drivers), the virtual gamepad (HID, to write to its driver) and the sound (COM, for WASAPI)
+# - Windows: the display connector and the virtual gamepad (CfgMgr32, to find their drivers), the virtual gamepad (HID, to write to its driver) and the sound (COM, for WASAPI), and a GUI program (-mwindows), so it opens no console window, but it writes to the console it's started from (see ../console.c)
 DAEMON_PACKAGES := glib-2.0 gio-2.0 gusb libturbojpeg
 ifeq ($(PLATFORM),windows)
+DAEMON_PLATFORM_LDFLAGS := -mwindows
 DAEMON_PLATFORM_LDLIBS := -lcfgmgr32 -lhid -lole32
 else
 DAEMON_PACKAGES += libpipewire-0.3 xkbcommon xkbcommon-x11 xcb wayland-client
+DAEMON_PLATFORM_LDFLAGS :=
 DAEMON_PLATFORM_LDLIBS := -levdi
 endif
 
 # Flags for the C compiler, with the library of the display connector compiled in by display/connector.c
 DAEMON_CFLAGS   := $(CFLAGS)
 DAEMON_CPPFLAGS := $(CPPFLAGS) $(shell pkg-config --cflags $(DAEMON_PACKAGES))
-DAEMON_LDFLAGS  := $(LDFLAGS)
+DAEMON_LDFLAGS  := $(LDFLAGS) $(DAEMON_PLATFORM_LDFLAGS)
 DAEMON_LDLIBS   := $(LDLIBS) $(shell pkg-config --libs $(DAEMON_PACKAGES)) $(DAEMON_PLATFORM_LDLIBS) -lm
 
 ALL += $(BIN_DIR)/pspdisp-daemon$(EXE)
