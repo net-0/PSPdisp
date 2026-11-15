@@ -4,7 +4,7 @@
 ;
 ; Copyright © 2026 Arthur Neto
 ;
-; Compiled by `make` (see installer.mk), from the folder it stages (StageDir), with:
+; Compiled by `make` (see inno.mk), from the folder it stages (StageDir), with:
 ; - bin: the programs, with the DLLs of MSYS2 they need (GTK, GLib, ...), as GTK finds its data from the folder above (lib and share)
 ; - lib, share: the data of GTK (the GSettings schemas, the icons, and the SVG loader of gdk-pixbuf)
 ; - drivers: the driver packages (the virtual display, the virtual gamepad and the WinUSB driver of the PSP), and pspdisp-driver.exe that installs them (see driver.c)
