@@ -103,7 +103,9 @@ Name: "{autodesktop}\PSPdisp"; Filename: "{app}\bin\pspdisp-ui.exe"; Tasks: desk
 Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "PSPdisp"; ValueData: """{app}\bin\pspdisp-daemon.exe"""; Flags: uninsdeletevalue; Tasks: autostart
 
 [Run]
-; As the user who started the installer, not as the administrator: the daemon refuses to run elevated, and the app starts it
+; As the user who started the installer, not as the administrator: the daemon refuses to run elevated, and the app can start it (its Start button)
+; The daemon at once with the autostart, as it would run after a sign-in (the Run value only starts it at the next one)
+Filename: "{app}\bin\pspdisp-daemon.exe"; Flags: nowait runasoriginaluser; Tasks: autostart
 Filename: "{app}\bin\pspdisp-ui.exe"; Description: "{cm:LaunchProgram,PSPdisp}"; Flags: postinstall nowait skipifsilent runasoriginaluser
 
 [UninstallDelete]
