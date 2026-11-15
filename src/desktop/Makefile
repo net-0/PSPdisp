@@ -73,4 +73,7 @@ ifeq ($(PLATFORM),windows)
 include $(DESKTOP_SRC_DIR)/controller/gamepad/vhid/vhid.mk
 endif
 
+# The installers, last, as they package the programs (and the driver packages), using their variables in their prerequisites
+include $(DESKTOP_SRC_DIR)/installer/Makefile
+
 all: $(ALL)

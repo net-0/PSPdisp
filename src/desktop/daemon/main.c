@@ -38,6 +38,7 @@
 #include "./state.c"
 #include "./session.c"
 #include "./system.c"
+#include "../console.c"
 
 #define PSPDISP_DAEMON_WLAN_RETRY 2000 // Time between two tries to start the WLAN server, e.g. while its port is used by another program, in milliseconds
 
@@ -583,6 +584,8 @@ gboolean pspdisp_daemon_on_stop(PSPdispDaemon *daemon) {
  * @return 0 once it stopped (or after `--version`), 1 if it couldn't start.
  */
 int main(int argc, char **argv) {
+	pspdisp_console_attach(); // On Windows, the logs go to the console it was started from (see `console.c`)
+
 	GOptionContext *options = g_option_context_new("- stream the desktop to a PSP");
 	GError *error = NULL;
 

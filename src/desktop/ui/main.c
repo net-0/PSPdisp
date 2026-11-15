@@ -21,6 +21,7 @@
 #include "./page/update_interval.c"
 #include "./page/control.c"
 #include "./page/presets.c"
+#include "../console.c"
 
 #define PSPDISP_UI_APP_ID "com.pspdisp.ui" // ID of the app, also the name of its icon (`com.pspdisp.ui.svg`) and of its desktop entry (`com.pspdisp.ui.desktop`)
 
@@ -102,6 +103,8 @@ int pspdisp_gtk_application_run(int argc, char **argv) {
  * @return The exit status of the app (see `pspdisp_gtk_application_run()`).
  */
 int main(int argc, char **argv) {
+	pspdisp_console_attach(); // On Windows, the logs go to the console it was started from (see `console.c`)
+
 #if defined(_WIN32)
 	// GTK draws with the CPU (cairo) on Windows, unless GSK_RENDERER says otherwise: its OpenGL renderer needs libEGL there, which MSYS2 doesn't have,
 	// and its Vulkan one crashes on the laptops with 2 GPUs, whose AMD layer (VK_LAYER_AMD_switchable_graphics) makes vkEnumeratePhysicalDevices() return VK_INCOMPLETE

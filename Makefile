@@ -6,7 +6,7 @@ DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BIN_DIR := $(DIR)/build
 DEP_DIR := $(BIN_DIR)/dep
 
-.PHONY: all desktop
+.PHONY: all desktop FORCE
 
 # Note: "make" will run only the first entry, which must be all files
 all: desktop

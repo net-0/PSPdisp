@@ -20,19 +20,21 @@ endif
 
 # The libraries: GTK, then by platform:
 # - Linux: the keyboard layout of the desktop (see controller/input/keymap.c)
-# - Windows: the addresses of the "WLAN" page (IP Helper, see page/wlan.c)
+# - Windows: the addresses of the "WLAN" page (IP Helper, see page/wlan.c), and a GUI program (-mwindows), so it opens no console window, but it writes to the console it's started from (see ../console.c)
 UI_PACKAGES := gtk4
 ifeq ($(PLATFORM),windows)
+UI_PLATFORM_LDFLAGS := -mwindows
 UI_PLATFORM_LDLIBS := -liphlpapi
 else
 UI_PACKAGES += xkbcommon xkbcommon-x11 xcb wayland-client
+UI_PLATFORM_LDFLAGS :=
 UI_PLATFORM_LDLIBS :=
 endif
 
 # Flags for the C compiler
 UI_CFLAGS   := $(CFLAGS)
 UI_CPPFLAGS := $(CPPFLAGS) $(shell pkg-config --cflags $(UI_PACKAGES))
-UI_LDFLAGS  := $(LDFLAGS)
+UI_LDFLAGS  := $(LDFLAGS) $(UI_PLATFORM_LDFLAGS)
 UI_LDLIBS   := $(LDLIBS) $(shell pkg-config --libs $(UI_PACKAGES)) $(UI_PLATFORM_LDLIBS)
 
 ALL += $(BIN_DIR)/pspdisp-ui$(EXE) $(BIN_DIR)/com.pspdisp.ui.svg $(BIN_DIR)/com.pspdisp.ui.desktop
