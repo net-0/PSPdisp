@@ -9,8 +9,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linux:
-    name: Build on Linux
+  arch:
+    name: Build on Arch Linux
     runs-on: ubuntu-latest
     container: archlinux:latest
     env:
@@ -45,6 +45,45 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           make desktop
+
+  debian:
+    name: Build on Debian
+    runs-on: ubuntu-latest
+    container: debian:testing
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Install the dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential \
+            ca-certificates \
+            git \
+            pkgconf \
+            libglib2.0-dev \
+            libgtk-4-dev \
+            libgusb-dev \
+            libpipewire-0.3-dev \
+            libturbojpeg0-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            libxcb1-dev \
+            libwayland-dev \
+            libevdi-dev
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Build
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make desktop
+      - name: Upload the .deb
+        uses: actions/upload-artifact@v7
+        with:
+          name: debian-package
+          path: build/deb/pspdisp_*.deb
+          if-no-files-found: error
 
   windows:
     name: Build on Windows

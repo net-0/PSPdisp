@@ -1,0 +1,22 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# postinst - Run by dpkg once the .deb of PSPdisp is installed (see deb.mk)
+#
+# Copyright © 2026 Arthur Neto
+#
+# Applies what the package installs at once, without a restart:
+# - the udev rule, which udev only reads again at boot: to /dev/uinput, and to a PSP already plugged (any Sony USB device, the rule picks the PSP)
+# - the EVDI module, loaded at boot (see display/connector/evdi/modules-load.conf), so it creates its device now (unless it's already loaded, e.g. for a DisplayLink dock)
+# Only on a running system (where udev runs), not in a chroot or a container; what fails is left to the next boot.
+
+set -e
+
+if [ "$1" = "configure" ] && [ -S /run/udev/control ]; then
+	udevadm control --reload-rules || true
+	udevadm trigger --subsystem-match=misc --sysname-match=uinput || true
+	udevadm trigger --subsystem-match=usb --attr-match=idVendor=054c || true
+	modprobe evdi || true
+fi
+
+exit 0

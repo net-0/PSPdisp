@@ -104,13 +104,18 @@ jobs:
         with:
           name: windows-setup
           path: dist
+      - name: Download the .deb
+        uses: actions/download-artifact@v8
+        with:
+          name: debian-package
+          path: dist
       - name: Publish release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ needs.versioning.outputs.tag }}
           name: ${{ needs.versioning.outputs.tag }}
           body: ${{ steps.format-changelog.outputs.changes }}
-          artifacts: dist/PSPdisp-*-setup.exe
+          artifacts: dist/PSPdisp-*-setup.exe,dist/pspdisp_*.deb
           artifactErrorsFailBuild: true
           prerelease: ${{ github.ref_name != 'main' }}
           makeLatest: ${{ github.ref_name == 'main' }}
