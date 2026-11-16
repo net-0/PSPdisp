@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# control - Control file of the .deb of PSPdisp (Debian and its derivatives)
+#
+# Copyright © 2026 Arthur Neto
+#
+# Made into DEBIAN/control by `make` (see deb.mk), which drops these comments and fills in what's known once the package is staged:
+# @VERSION@, @ARCH@, @INSTALLED_SIZE@ (in KiB) and @SHLIBS@ (the packages of the libraries the programs link, found by dpkg-shlibdeps).
+#
+# The other dependencies are what the programs run but don't link:
+# - the EVDI kernel module: evdi-dkms (built for each kernel), or evdi-modules, which the EVDI modules of the Ubuntu kernels provide (signed, for Secure Boot)
+# - PipeWire, for the sound
+# - pkexec, so polkit asks for the password to create an EVDI device when none is free (e.g. a DisplayLink dock took it)
+
+Package: pspdisp
+Version: @VERSION@
+Architecture: @ARCH@
+Maintainer: Arthur Neto <arthur@net-0.dev>
+Installed-Size: @INSTALLED_SIZE@
+Depends: @SHLIBS@, evdi-dkms | evdi-modules
+Recommends: pipewire, pkexec
+Section: utils
+Priority: optional
+Homepage: https://github.com/net-0/PSPdisp
+Description: Use a PSP as a display of the computer
+ PSPdisp turns a PSP into a second display of the computer: the PSP shows a
+ virtual display, plays the desktop sound, and its buttons drive a virtual
+ gamepad, keyboard or mouse.
+ .
+ This package has the desktop app (pspdisp-ui) and the daemon that streams to
+ the PSP (pspdisp-daemon). The PSP app is installed on the PSP itself.
