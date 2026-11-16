@@ -7,9 +7,9 @@
  *****************************************************/
 
 /*
- * A virtual gamepad that the computer sees as a plugged controller, with the layout of an Xbox controller, so the games know it.
+ * A virtual gamepad that the computer sees as a plugged DualShock 4 (the PlayStation 4 controller), so the games know it, and show the symbols of the PSP buttons.
  *
- * Its implementation varies with the platform, chosen at compile time: uinput on Linux (`gamepad/uinput.c`), the PSPdisp virtual HID gamepad driver on Windows (`gamepad/vhid.c`).
+ * Its implementation varies with the platform, chosen at compile time: uhid on Linux (`gamepad/uhid.c`), the PSPdisp virtual HID gamepad driver on Windows (`gamepad/vhid.c`).
  */
 
 #pragma once
@@ -38,7 +38,7 @@ typedef enum: uint16_t {
 /**
  * @brief State of the virtual gamepad.
  *
- * The parts an Xbox controller has but the PSP doesn't (the right stick, the triggers, the guide button and the stick buttons) stay at rest.
+ * The parts a DualShock 4 has but the PSP doesn't (the right stick, the triggers, the PS button, the stick buttons and the touchpad) stay at rest.
  */
 typedef struct {
 	uint16_t buttons; // The pressed buttons, `PSPdispGamepadButton` bits
@@ -49,7 +49,7 @@ typedef struct {
 /**
  * @brief Virtual gamepad.
  *
- * Its platform implementation (included below, e.g. `gamepad/uinput.c`) declares this struct with the data it needs, and defines `PSPDISP_GAMEPAD_NAME`.
+ * Its platform implementation (included below, e.g. `gamepad/uhid.c`) declares this struct with the data it needs, and defines `PSPDISP_GAMEPAD_NAME`.
  */
 typedef struct PSPdispGamepad PSPdispGamepad;
 
@@ -65,7 +65,7 @@ PSPdispGamepad *pspdisp_gamepad_new(const char *name, GError **error);
 /**
  * @brief Set the state of the virtual gamepad, implemented by the platform.
  *
- * Only what changed since the previous state is sent to the computer, so it can be called with the same state again and again.
+ * It can be called with the same state again and again.
  *
  * @param gamepad The gamepad.
  * @param state The new state.
@@ -84,7 +84,7 @@ void pspdisp_gamepad_destroy(PSPdispGamepad *gamepad);
 #if defined(_WIN32)
 	#include "./gamepad/vhid.c"
 #elif defined(__linux__)
-	#include "./gamepad/uinput.c"
+	#include "./gamepad/uhid.c"
 #else
 	#error "Unsupported platform: there's no virtual gamepad for it yet"
 #endif
