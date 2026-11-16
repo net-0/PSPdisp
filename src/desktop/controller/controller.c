@@ -9,8 +9,8 @@
 /*
  * The virtual controller: what the buttons and the analog stick of the PSP drive on the computer, a virtual gamepad, or a virtual keyboard and mouse pressed as a control file says (see `control_file.c`).
  *
- * The PSP buttons go to the Xbox buttons at the same place, as most games know the Xbox layout: cross is A (bottom), circle is B (right), square is X (left) and triangle is Y (top).
- * L and R are the shoulder buttons, select and start are back and start, the directional pad is the directional pad, and the analog stick is the left stick.
+ * The PSP buttons go to the buttons at the same place on the gamepad, a DualShock 4 (see `gamepad.c`), which have the same symbols: cross, circle, square and triangle.
+ * L and R are L1 and R1, select and start are share and options, the directional pad is the directional pad, and the analog stick is the left stick.
  * The analog stick of the PSP rests a bit off its center, by a different amount on each PSP, so a dead zone around the center reads as centered (see `PSPDISP_CONTROLLER_DEAD_ZONE`).
  *
  * The virtual gamepad itself varies with the platform (see `gamepad.c`), as the virtual keyboard and mouse (see `input.c`).
