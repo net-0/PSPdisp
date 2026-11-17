@@ -42,7 +42,8 @@ cp -a %{pspdisp_stage_dir}/. %{buildroot}
 # Applies what the package installs at once, without a restart:
 # - the udev rule, which udev only reads again at boot: to /dev/uinput, /dev/uhid, and to a PSP already plugged (any Sony USB device, the rule picks the PSP)
 # - the EVDI module, loaded at boot (see display/connector/evdi/modules-load.conf), so it creates its device now (unless it's already loaded, e.g. for a DisplayLink dock)
-# Only on a running system (where udev runs), not in a chroot or a container; what fails is left to the next boot (e.g. akmods may still be building the module).
+# - the daemon, for each user signed in to a desktop, started at their sign-in: the unit systemd-xdg-autostart-generator makes of its autostart entry (see daemon/com.pspdisp.daemon.desktop) once the systemd of the user reloads, none when they turned it off
+# Only on a running system (where udev and systemd run), not in a chroot or a container; what fails is left to the next boot (e.g. akmods may still be building the module), or sign-in.
 %post
 if [ -S /run/udev/control ]; then
 	udevadm control --reload-rules || :
@@ -50,6 +51,21 @@ if [ -S /run/udev/control ]; then
 	udevadm trigger --subsystem-match=misc --sysname-match=uhid || :
 	udevadm trigger --subsystem-match=usb --attr-match=idVendor=054c || :
 	modprobe evdi || :
+fi
+
+# Only the sessions of the users at a desktop, not the others (e.g. SSH, or the one of the login screen)
+if [ -d /run/systemd/system ]; then
+	for session in $(loginctl list-sessions --no-legend | awk '{ print $1 }'); do
+		[ "$(loginctl show-session "$session" -p Class --value)" = user ] || continue
+		case "$(loginctl show-session "$session" -p Type --value)" in
+			x11|wayland) ;;
+			*) continue ;;
+		esac
+		user=$(loginctl show-session "$session" -p Name --value) || continue
+		systemctl --user -M "$user@" daemon-reload || continue
+		# Quiet, as the unit is missing when the user turned the autostart off
+		systemctl --user -M "$user@" start --no-block app-com.pspdisp.daemon@autostart.service 2>/dev/null || :
+	done
 fi
 
 # The autostart entry is a configuration file, as the files of /etc, so a changed one is kept on upgrade

@@ -4,6 +4,8 @@
 #
 # Copyright © 2026 Arthur Neto
 #
+# Starts the daemon for each user signed in to a desktop, as it would only start at their next sign-in otherwise.
+# It's the unit systemd-xdg-autostart-generator makes of the autostart entry of the daemon (see daemon/com.pspdisp.daemon.desktop) once the systemd of the user reloads, none when they turned it off.
 # Tells the user when the EVDI module can't be loaded at once, which the pacman hook that loads it only reports with a generic error.
 # The hooks of systemd apply the rest without a restart: the udev rule (35-systemd-udev-reload.hook), and the EVDI module loaded at boot (36-systemd-modules-load.hook, see display/connector/evdi/modules-load.conf).
 # The module mostly fails to load after a kernel upgrade without a restart, as the modules on disk are then the ones of the new kernel.
@@ -12,6 +14,19 @@ post_install() {
 	# Only on the booted system, not in a chroot (e.g. while installing Arch), the same as the hooks of systemd
 	if ! systemd-detect-virt -q --chroot && systemd-notify --booted; then
 		modprobe -q evdi || echo '==> Could not load the EVDI module now, it loads at the next boot'
+
+		# Only the sessions of the users at a desktop, not the others (e.g. SSH, or the one of the login screen)
+		for session in $(loginctl list-sessions --no-legend | awk '{ print $1 }'); do
+			[ "$(loginctl show-session "$session" -p Class --value)" = user ] || continue
+			case "$(loginctl show-session "$session" -p Type --value)" in
+				x11|wayland) ;;
+				*) continue ;;
+			esac
+			user=$(loginctl show-session "$session" -p Name --value) || continue
+			systemctl --user -M "$user@" daemon-reload || continue
+			# Quiet, as the unit is missing when the user turned the autostart off
+			systemctl --user -M "$user@" start --no-block app-com.pspdisp.daemon@autostart.service 2>/dev/null || true
+		done
 	fi
 }
 
