@@ -85,6 +85,51 @@ jobs:
           path: build/deb/pspdisp_*.deb
           if-no-files-found: error
 
+  fedora:
+    name: Build on Fedora
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    env:
+      EVDI_VERSION: v1.15.1
+    steps:
+      - name: Install the dependencies
+        run: |
+          dnf install -y \
+            gcc \
+            make \
+            git \
+            pkgconf-pkg-config \
+            rpm-build \
+            glib2-devel \
+            gtk4-devel \
+            libgusb-devel \
+            pipewire-devel \
+            turbojpeg-devel \
+            libxkbcommon-devel \
+            libxkbcommon-x11-devel \
+            libxcb-devel \
+            wayland-devel \
+            libdrm-devel
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install libevdi
+        run: |
+          git clone --depth 1 --branch "$EVDI_VERSION" https://github.com/DisplayLink/evdi.git /tmp/evdi
+          make -C /tmp/evdi/library
+          make -C /tmp/evdi/library install PREFIX=/usr LIBDIR=/usr/lib64
+          install -Dm644 /tmp/evdi/library/evdi_lib.h /usr/include/evdi_lib.h
+      - name: Build
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make desktop
+      - name: Upload the RPM
+        uses: actions/upload-artifact@v7
+        with:
+          name: fedora-package
+          path: build/rpm/pspdisp-*.rpm
+          if-no-files-found: error
+
   windows:
     name: Build on Windows
     runs-on: windows-2022
