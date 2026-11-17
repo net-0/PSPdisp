@@ -6,7 +6,7 @@
 #
 # Built by makepkg from the latest commit of main, as each commit there is a release (CD tags it), so this file doesn't change with each release: pkgver() reads the version from the tag.
 # It installs what the .deb does (see ../deb/deb.mk): the programs, the desktop entry of the app and its icon, the udev rule, the EVDI module loaded at boot with a device, the autostart entry of the daemon, and the license.
-# The hooks of pacman apply the udev rule and load the EVDI module at once, and pspdisp.install tells when the module can't be loaded.
+# The hooks of pacman apply the udev rule and load the EVDI module at once, and pspdisp.install starts the daemon for the users signed in to a desktop, and tells when the module can't be loaded.
 # Published in the AUR with pspdisp.install and its .SRCINFO (`makepkg --printsrcinfo > .SRCINFO`).
 
 # Maintainer: Arthur Neto <arthur@net-0.dev>

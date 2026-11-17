@@ -8,7 +8,7 @@
 # - usr/lib/modprobe.d, usr/lib/modules-load.d: the EVDI module loaded at boot with a device, so the daemon only asks for the password to create one when none is free
 # - etc/xdg/autostart: the autostart entry of the daemon, which starts it when a user signs in
 # - usr/share/doc/pspdisp/copyright: the license
-# - DEBIAN: postinst, which applies the udev rule at once, conffiles, which keeps the changes to the autostart entry on upgrade (as Debian wants for the files of /etc), and the control file, written when the .deb is made (see below)
+# - DEBIAN: postinst, which applies the udev rule and starts the daemon at once, conffiles, which keeps the changes to the autostart entry on upgrade (as Debian wants for the files of /etc), and the control file, written when the .deb is made (see below)
 # `make` makes it in build/deb, if dpkg-shlibdeps is installed (otherwise it's skipped, with a note).
 
 # The folder of this file, absolute (and not ending with /), as the paths in an included Makefile are relative to where make runs

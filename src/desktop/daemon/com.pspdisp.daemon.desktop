@@ -8,7 +8,7 @@
 # The desktop starts it in its session, with its environment (e.g. WAYLAND_DISPLAY), as a service of the user on the desktops that use systemd-xdg-autostart-generator (e.g. GNOME and KDE).
 # Each user can turn it off in the startup settings of their desktop, which hide it for them only (a copy in ~/.config/autostart with Hidden=true).
 # TryExec skips it once the daemon is removed, as the entry may be left (e.g. a .deb keeps its files of /etc until it's purged).
-# Installed in /etc/xdg/autostart by the packages (see installer/), so it starts at the next sign-in (until then, the desktop app starts it with its Start button).
+# Installed in /etc/xdg/autostart by the packages (see installer/), which also start it at once for the users signed in to a desktop, as the unit systemd-xdg-autostart-generator makes of it.
 
 [Desktop Entry]
 Type=Application
