@@ -52,6 +52,7 @@ if [ -S /run/udev/control ]; then
 	modprobe evdi || :
 fi
 
+# The autostart entry is a configuration file, as the files of /etc, so a changed one is kept on upgrade
 %files
 %license %{_datadir}/licenses/%{name}/LICENSE
 %{_bindir}/pspdisp-ui
@@ -61,3 +62,4 @@ fi
 %{_prefix}/lib/udev/rules.d/60-pspdisp.rules
 %{_prefix}/lib/modprobe.d/00-pspdisp.conf
 %{_prefix}/lib/modules-load.d/pspdisp.conf
+%config(noreplace) %{_sysconfdir}/xdg/autostart/com.pspdisp.daemon.desktop

@@ -6,6 +6,7 @@
 # - usr/share/applications, usr/share/icons: the desktop entry of the app and its icon
 # - usr/lib/udev/rules.d: the udev rule, which gives the PSP, /dev/uinput and /dev/uhid to the user at the computer
 # - usr/lib/modprobe.d, usr/lib/modules-load.d: the EVDI module loaded at boot with a device, so the daemon only asks for the password to create one when none is free
+# - etc/xdg/autostart: the autostart entry of the daemon, which starts it when a user signs in
 # - usr/share/licenses/pspdisp: the license
 # The spec (pspdisp.spec) has the rest: what the package is, what it depends on, and the script run once it's installed.
 # `make` makes it in build/rpm, if rpmbuild is installed (otherwise it's skipped, with a note).
@@ -50,7 +51,7 @@ $(RPM_DIR):
 # The folder the RPM is made from, staged again from scratch when what it has changes, as it's installed (see the top of this file)
 # A folder's date doesn't tell when its files changed, so its target is a file touched once it's all staged
 $(RPM_STAGE): $(BIN_DIR)/pspdisp-ui $(BIN_DIR)/pspdisp-daemon $(UI_SRC_DIR)/com.pspdisp.ui.desktop $(UI_SRC_DIR)/com.pspdisp.ui.svg \
-		$(DAEMON_SRC_DIR)/60-pspdisp.rules $(RPM_EVDI_SRC_DIR)/modprobe.conf $(RPM_EVDI_SRC_DIR)/modules-load.conf \
+		$(DAEMON_SRC_DIR)/com.pspdisp.daemon.desktop $(DAEMON_SRC_DIR)/60-pspdisp.rules $(RPM_EVDI_SRC_DIR)/modprobe.conf $(RPM_EVDI_SRC_DIR)/modules-load.conf \
 		$(RPM_SRC_DIR)/rpm.mk | $(RPM_DIR)
 	rm -rf $(RPM_STAGE_DIR)
 	install -Dm755 -s -t $(RPM_STAGE_DIR)/usr/bin $(BIN_DIR)/pspdisp-ui $(BIN_DIR)/pspdisp-daemon
@@ -59,6 +60,7 @@ $(RPM_STAGE): $(BIN_DIR)/pspdisp-ui $(BIN_DIR)/pspdisp-daemon $(UI_SRC_DIR)/com.
 	install -Dm644 -t $(RPM_STAGE_DIR)/usr/lib/udev/rules.d $(DAEMON_SRC_DIR)/60-pspdisp.rules
 	install -Dm644 $(RPM_EVDI_SRC_DIR)/modprobe.conf $(RPM_STAGE_DIR)/usr/lib/modprobe.d/00-pspdisp.conf
 	install -Dm644 $(RPM_EVDI_SRC_DIR)/modules-load.conf $(RPM_STAGE_DIR)/usr/lib/modules-load.d/pspdisp.conf
+	install -Dm644 -t $(RPM_STAGE_DIR)/etc/xdg/autostart $(DAEMON_SRC_DIR)/com.pspdisp.daemon.desktop
 	install -Dm644 $(DESKTOP_SRC_DIR)/../../LICENSE $(RPM_STAGE_DIR)/usr/share/licenses/pspdisp/LICENSE
 	touch $@
 
