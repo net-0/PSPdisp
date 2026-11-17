@@ -29,7 +29,6 @@
 typedef struct {
 	GtkWidget *addresses; // The IP addresses of the computer
 	GtkWidget *server; // What the WLAN server is doing
-	GtkWidget *password; // The password entry
 } PSPdispGtkPageWLAN;
 
 /**
@@ -105,17 +104,6 @@ void pspdisp_gtk_page_wlan_on_refresh_addresses(GtkButton *button, PSPdispGtkPag
 }
 
 /**
- * @brief Remove the password, as "No password" of the old desktop app.
- *
- * @param button Unused, the button.
- * @param page The page.
- */
-void pspdisp_gtk_page_wlan_on_no_password(GtkButton *button, PSPdispGtkPageWLAN *page) {
-	(void) button;
-	gtk_editable_set_text(GTK_EDITABLE(page->password), "");
-}
-
-/**
  * @brief Show what the WLAN server is doing, called about every second.
  *
  * @param ui The app.
@@ -130,7 +118,7 @@ void pspdisp_gtk_page_wlan_status(PSPdispUI *ui, PSPdispGtkPageWLAN *page) {
 	else if (!ui->settings.enabled || !ui->settings.use_wlan)
 		text = g_strdup("The WLAN mode is not enabled (see the \"Streaming\" page).");
 	else if (status->wlan)
-		text = g_strdup_printf("The WLAN server listens on port %u%s.", status->wlan_port, ui->settings.wlan_password[0] == '\0' ? ", without a password: anyone on the network can connect" : "");
+		text = g_strdup_printf("The WLAN server listens on port %u.", status->wlan_port);
 	else if (status->wlan_error[0] != '\0')
 		text = g_strdup_printf("The WLAN server can't start: %s.", status->wlan_error);
 	else
@@ -163,13 +151,12 @@ GtkWidget *pspdisp_gtk_page_wlan_notifications_new(PSPdispUI *ui) {
 }
 
 /**
- * @brief Make the group of the password: its entry, and a button to remove it.
+ * @brief Make the group of the password: its entry.
  *
  * @param ui The app.
- * @param page The page, whose password entry is made.
  * @return The group box.
  */
-GtkWidget *pspdisp_gtk_page_wlan_password_new(PSPdispUI *ui, PSPdispGtkPageWLAN *page) {
+GtkWidget *pspdisp_gtk_page_wlan_password_new(PSPdispUI *ui) {
 	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
 	GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
 	GtkWidget *entry = gtk_entry_new();
@@ -177,17 +164,14 @@ GtkWidget *pspdisp_gtk_page_wlan_password_new(PSPdispUI *ui, PSPdispGtkPageWLAN 
 	gtk_entry_set_max_length(GTK_ENTRY(entry), PSPDISP_SETTINGS_PASSWORD_SIZE);
 	gtk_entry_set_invisible_char(GTK_ENTRY(entry), L'*');
 	gtk_widget_set_hexpand(entry, TRUE);
-	page->password = pspdisp_ui_bind(ui, entry, PSPDISP_UI_BINDING_ENTRY, "WLAN", "Password", offsetof(PSPdispSettings, wlan_password), NULL);
-
-	GtkWidget *no_password = gtk_button_new_with_label("No password");
-	g_signal_connect(no_password, "clicked", G_CALLBACK(pspdisp_gtk_page_wlan_on_no_password), page);
+	pspdisp_ui_bind(ui, entry, PSPDISP_UI_BINDING_ENTRY, "WLAN", "Password", offsetof(PSPdispSettings, wlan_password), NULL);
 
 	gtk_box_append(GTK_BOX(row), gtk_label_new("Password (max 32 chars)"));
 	gtk_box_append(GTK_BOX(row), entry);
-	gtk_box_append(GTK_BOX(row), no_password);
 
 	GtkWidget *paragraph = pspdisp_ui_component_paragraph_new(
 		"The PSP sends it when it connects, set the same one in the \"WLAN Settings\" of the PSP app. "
+		"The WLAN server doesn't start without one, as anyone on the network could connect. "
 		"It's sent in clear over the network, so it only keeps away the PSPs of others.");
 	gtk_widget_add_css_class(paragraph, "dim-label");
 
@@ -267,7 +251,7 @@ GtkWidget *pspdisp_gtk_page_wlan_new(PSPdispUI *ui) {
 	GtkWidget *scroller = pspdisp_ui_component_page_new(&box);
 
 	gtk_box_append(GTK_BOX(box), pspdisp_gtk_page_wlan_notifications_new(ui));
-	gtk_box_append(GTK_BOX(box), pspdisp_gtk_page_wlan_password_new(ui, page));
+	gtk_box_append(GTK_BOX(box), pspdisp_gtk_page_wlan_password_new(ui));
 	gtk_box_append(GTK_BOX(box), pspdisp_gtk_page_wlan_port_new(ui));
 	gtk_box_append(GTK_BOX(box), pspdisp_gtk_page_wlan_ip_address_new(ui, page));
 

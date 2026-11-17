@@ -11,6 +11,7 @@
  *
  * The PSP joins the wireless network, connects to the desktop over TCP, and sends its password (`PSPDISP_WLAN_PASSWORD_SIZE` bytes): the desktop closes the connection when it doesn't match, and the PSP connects again.
  * So the desktop is the server: it listens on `PSPDISP_WLAN_PORT` (plus the port offset set on the PSP), on every network interface.
+ * It only listens with a password, as without one anyone on the network could connect and see the desktop.
  * After the password, the data goes through the connection as it is, as the frames and the responses over USB.
  *
  * It's only a TCP server, through GIO, so it's the same on every platform: whether the PSP is on a wireless network doesn't matter to the desktop.
@@ -53,11 +54,15 @@ typedef struct {
  * @brief Start listening for the PSPs.
  *
  * @param port The TCP port, `PSPDISP_WLAN_PORT` plus the port offset set on the PSP.
- * @param password The password set on the PSP, at most `PSPDISP_WLAN_PASSWORD_SIZE` characters (`""` for none).
+ * @param password The password set on the PSP, from 1 to `PSPDISP_WLAN_PASSWORD_SIZE` characters.
  * @param error Where to tell why it failed (e.g. the port is used by another program).
  * @return The server, free it with `pspdisp_wlan_destroy()`, or `NULL` if it failed.
  */
 PSPdispWLAN *pspdisp_wlan_new(uint16_t port, const char *password, GError **error) {
+	if (password[0] == '\0') {
+		g_set_error_literal(error, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT, "there's no password, anyone on the network would be able to connect");
+		return NULL;
+	}
 	if (strlen(password) > PSPDISP_WLAN_PASSWORD_SIZE) {
 		g_set_error(error, G_IO_ERROR, G_IO_ERROR_INVALID_ARGUMENT, "the password is longer than %d characters, the PSP can't send it", PSPDISP_WLAN_PASSWORD_SIZE);
 		return NULL;
@@ -82,11 +87,11 @@ PSPdispWLAN *pspdisp_wlan_new(uint16_t port, const char *password, GError **erro
  * @brief Change the password, for the next PSPs that connect (the ones connected stay), from any thread.
  *
  * @param wlan The server.
- * @param password The password set on the PSP, at most `PSPDISP_WLAN_PASSWORD_SIZE` characters (`""` for none).
+ * @param password The password set on the PSP, from 1 to `PSPDISP_WLAN_PASSWORD_SIZE` characters.
  * @return `true` if it was changed, `false` if an argument is invalid.
  */
 bool pspdisp_wlan_set_password(PSPdispWLAN *wlan, const char *password) {
-	if (strlen(password) > PSPDISP_WLAN_PASSWORD_SIZE) return false;
+	if (password[0] == '\0' || strlen(password) > PSPDISP_WLAN_PASSWORD_SIZE) return false;
 
 	g_mutex_lock(&wlan->password_mutex);
 	memset(wlan->password, 0, sizeof(wlan->password));
