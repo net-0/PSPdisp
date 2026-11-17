@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# pspdisp.install - Run by pacman once the package of PSPdisp is installed or upgraded (see PKGBUILD)
+#
+# Copyright © 2026 Arthur Neto
+#
+# Tells the user when the EVDI module can't be loaded at once, which the pacman hook that loads it only reports with a generic error.
+# The hooks of systemd apply the rest without a restart: the udev rule (35-systemd-udev-reload.hook), and the EVDI module loaded at boot (36-systemd-modules-load.hook, see display/connector/evdi/modules-load.conf).
+# The module mostly fails to load after a kernel upgrade without a restart, as the modules on disk are then the ones of the new kernel.
+
+post_install() {
+	# Only on the booted system, not in a chroot (e.g. while installing Arch), the same as the hooks of systemd
+	if ! systemd-detect-virt -q --chroot && systemd-notify --booted; then
+		modprobe -q evdi || echo '==> Could not load the EVDI module now, it loads at the next boot'
+	fi
+}
+
+post_upgrade() {
+	post_install
+}

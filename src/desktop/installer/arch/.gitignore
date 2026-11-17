@@ -1,0 +1,5 @@
+# What makepkg makes when it runs here: the repository it clones, its work folders and the packages
+/PSPdisp/
+/src/
+/pkg/
+/*.pkg.tar.*

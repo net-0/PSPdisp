@@ -45,6 +45,15 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           make desktop
+      - name: Build the package of the AUR
+        run: |
+          useradd -m builder
+          mkdir -p /tmp/aur/src
+          cp src/desktop/installer/arch/PKGBUILD src/desktop/installer/arch/pspdisp.install /tmp/aur
+          git clone "$GITHUB_WORKSPACE" /tmp/aur/src/PSPdisp
+          chown -R builder /tmp/aur
+          cd /tmp/aur
+          su builder -c 'makepkg -e -d'
 
   debian:
     name: Build on Debian
