@@ -4,7 +4,7 @@
 # The .deb of PSPdisp for Debian and its derivatives (e.g. Ubuntu), made by dpkg-deb from a folder staged here, as it's installed:
 # - usr/bin: the programs
 # - usr/share/applications, usr/share/icons: the desktop entry of the app and its icon
-# - usr/lib/udev/rules.d: the udev rule, which gives the PSP and /dev/uinput to the user at the computer
+# - usr/lib/udev/rules.d: the udev rule, which gives the PSP, /dev/uinput and /dev/uhid to the user at the computer
 # - usr/lib/modprobe.d, usr/lib/modules-load.d: the EVDI module loaded at boot with a device, so the daemon only asks for the password to create one when none is free
 # - usr/share/doc/pspdisp/copyright: the license
 # - DEBIAN: postinst, which applies the udev rule at once, and the control file, written when the .deb is made (see below)
