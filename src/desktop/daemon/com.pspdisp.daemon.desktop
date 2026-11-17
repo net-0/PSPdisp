@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# com.pspdisp.daemon.desktop - Autostart entry of the PSPdisp daemon (Linux)
+#
+# Copyright © 2026 Arthur Neto
+#
+# Starts the daemon when the user signs in, so it waits for the PSP.
+# The desktop starts it in its session, with its environment (e.g. WAYLAND_DISPLAY), as a service of the user on the desktops that use systemd-xdg-autostart-generator (e.g. GNOME and KDE).
+# Each user can turn it off in the startup settings of their desktop, which hide it for them only (a copy in ~/.config/autostart with Hidden=true).
+# TryExec skips it once the daemon is removed, as the entry may be left (e.g. a .deb keeps its files of /etc until it's purged).
+# Installed in /etc/xdg/autostart by the packages (see installer/), so it starts at the next sign-in (until then, the desktop app starts it with its Start button).
+
+[Desktop Entry]
+Type=Application
+Name=PSPdisp daemon
+Comment=Wait for the PSP from the sign-in, to stream the desktop to it
+Exec=pspdisp-daemon
+TryExec=pspdisp-daemon
+Icon=com.pspdisp.ui
+Terminal=false

@@ -5,7 +5,7 @@
 # Copyright © 2026 Arthur Neto
 #
 # Built by makepkg from the latest commit of main, as each commit there is a release (CD tags it), so this file doesn't change with each release: pkgver() reads the version from the tag.
-# It installs what the .deb does (see ../deb/deb.mk): the programs, the desktop entry of the app and its icon, the udev rule, the EVDI module loaded at boot with a device, and the license.
+# It installs what the .deb does (see ../deb/deb.mk): the programs, the desktop entry of the app and its icon, the udev rule, the EVDI module loaded at boot with a device, the autostart entry of the daemon, and the license.
 # The hooks of pacman apply the udev rule and load the EVDI module at once, and pspdisp.install tells when the module can't be loaded.
 # Published in the AUR with pspdisp.install and its .SRCINFO (`makepkg --printsrcinfo > .SRCINFO`).
 
@@ -47,5 +47,6 @@ package() {
 	install -Dm644 -t "$pkgdir/usr/lib/udev/rules.d" src/desktop/daemon/60-pspdisp.rules
 	install -Dm644 src/desktop/display/connector/evdi/modprobe.conf "$pkgdir/usr/lib/modprobe.d/00-pspdisp.conf"
 	install -Dm644 src/desktop/display/connector/evdi/modules-load.conf "$pkgdir/usr/lib/modules-load.d/pspdisp.conf"
+	install -Dm644 -t "$pkgdir/etc/xdg/autostart" src/desktop/daemon/com.pspdisp.daemon.desktop
 	install -Dm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
 }
