@@ -46,8 +46,9 @@ $(VHID_DIR):
 	mkdir -p $@
 
 # The driver, compiled and linked by cl.exe, then signed by signtool with the certificate of the desktop (pspdisp-winsign.pfx), before the catalog takes its hash
+# It includes the DualShock 4 of the virtual gamepad (../ds4.c), shared with the daemon
 # (MSYS2 would turn the /options of these Windows programs into paths, so it's off for them and the paths are given as Windows ones; the .obj, .lib and .exp of the link aren't part of the package)
-$(VHID_DIR)/pspdisp-vhid.dll: $(VHID_SRC_DIR)/driver.c $(VHID_SRC_DIR)/protocol.h $(WINSIGN_DIR)/pspdisp-winsign.pfx | $(VHID_DIR)
+$(VHID_DIR)/pspdisp-vhid.dll: $(VHID_SRC_DIR)/driver.c $(VHID_SRC_DIR)/protocol.h $(abspath $(VHID_SRC_DIR)/../ds4.c) $(WINSIGN_DIR)/pspdisp-winsign.pfx | $(VHID_DIR)
 	@test -n "$(VHID_MSVC)" || { echo "MSVC wasn't found (with vswhere), install the Build Tools of Visual Studio with the C++ tools (the VCTools workload) to build the virtual HID gamepad driver" >&2; exit 1; }
 	@test -d "$(VHID_WDK_BIN)" || { echo "The Windows Driver Kit (WDK) wasn't found in C:\\Program Files (x86)\\Windows Kits\\10, install it to build the virtual HID gamepad driver" >&2; exit 1; }
 	INCLUDE="$$(cygpath -wp '$(VHID_INCLUDE)')" LIB="$$(cygpath -wp '$(VHID_LIB)')" MSYS2_ARG_CONV_EXCL='*' "$(VHID_MSVC)/bin/Hostx64/x64/cl.exe" \

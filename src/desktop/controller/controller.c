@@ -9,7 +9,7 @@
 /*
  * The virtual controller: what the buttons and the analog stick of the PSP drive on the computer, a virtual gamepad, or a virtual keyboard and mouse pressed as a control file says (see `control_file.c`).
  *
- * The PSP buttons go to the buttons at the same place on the gamepad, a DualShock 4 (see `gamepad.c`), which have the same symbols: cross, circle, square and triangle.
+ * The PSP buttons go to the buttons at the same place on the gamepad, a DualShock 4 (see `gamepad/ds4.c`), which have the same symbols: cross, circle, square and triangle.
  * L and R are L1 and R1, select and start are share and options, the directional pad is the directional pad, and the analog stick is the left stick.
  * The analog stick of the PSP rests a bit off its center, by a different amount on each PSP, so a dead zone around the center reads as centered (see `PSPDISP_CONTROLLER_DEAD_ZONE`).
  *
@@ -30,24 +30,20 @@
 #define PSPDISP_CONTROLLER_DEAD_ZONE 32.0                      // Distance from the center under which the analog stick reads as centered, from 0 to 127.5 (a quarter of the way, as the dead zone XInput advises)
 
 /**
- * @brief The PSP buttons, with the gamepad button each one drives.
+ * @brief The PSP buttons, with the button of the gamepad each one drives (the directional pad drives its hat instead, see `pspdisp_controller_map()`).
  */
 const struct {
 	PSPdispButton psp; // The PSP button
-	PSPdispGamepadButton gamepad; // The gamepad button
+	uint16_t gamepad; // The button of the gamepad, `PSPDISP_DS4_BUTTON_*`
 } pspdisp_controller_buttons[] = {
-	{ PSPDISP_BUTTON_CROSS,    PSPDISP_GAMEPAD_BUTTON_SOUTH },
-	{ PSPDISP_BUTTON_CIRCLE,   PSPDISP_GAMEPAD_BUTTON_EAST },
-	{ PSPDISP_BUTTON_SQUARE,   PSPDISP_GAMEPAD_BUTTON_WEST },
-	{ PSPDISP_BUTTON_TRIANGLE, PSPDISP_GAMEPAD_BUTTON_NORTH },
-	{ PSPDISP_BUTTON_L,        PSPDISP_GAMEPAD_BUTTON_LEFT_SHOULDER },
-	{ PSPDISP_BUTTON_R,        PSPDISP_GAMEPAD_BUTTON_RIGHT_SHOULDER },
-	{ PSPDISP_BUTTON_SELECT,   PSPDISP_GAMEPAD_BUTTON_BACK },
-	{ PSPDISP_BUTTON_START,    PSPDISP_GAMEPAD_BUTTON_START },
-	{ PSPDISP_BUTTON_UP,       PSPDISP_GAMEPAD_BUTTON_DPAD_UP },
-	{ PSPDISP_BUTTON_DOWN,     PSPDISP_GAMEPAD_BUTTON_DPAD_DOWN },
-	{ PSPDISP_BUTTON_LEFT,     PSPDISP_GAMEPAD_BUTTON_DPAD_LEFT },
-	{ PSPDISP_BUTTON_RIGHT,    PSPDISP_GAMEPAD_BUTTON_DPAD_RIGHT },
+	{ PSPDISP_BUTTON_CROSS,    PSPDISP_DS4_BUTTON_CROSS },
+	{ PSPDISP_BUTTON_CIRCLE,   PSPDISP_DS4_BUTTON_CIRCLE },
+	{ PSPDISP_BUTTON_SQUARE,   PSPDISP_DS4_BUTTON_SQUARE },
+	{ PSPDISP_BUTTON_TRIANGLE, PSPDISP_DS4_BUTTON_TRIANGLE },
+	{ PSPDISP_BUTTON_L,        PSPDISP_DS4_BUTTON_L1 },
+	{ PSPDISP_BUTTON_R,        PSPDISP_DS4_BUTTON_R1 },
+	{ PSPDISP_BUTTON_SELECT,   PSPDISP_DS4_BUTTON_SHARE },
+	{ PSPDISP_BUTTON_START,    PSPDISP_DS4_BUTTON_OPTIONS },
 };
 
 /**
@@ -133,12 +129,17 @@ uint32_t pspdisp_controller_open_menu_requests(PSPdispController *controller) {
  * @param analog_y The analog stick of the PSP, from the top (0) to the bottom (255).
  * @return The state of the gamepad.
  */
-PSPdispGamepadState pspdisp_controller_map(uint32_t buttons, uint8_t analog_x, uint8_t analog_y) {
-	PSPdispGamepadState state = {0};
+PSPdispDS4State pspdisp_controller_map(uint32_t buttons, uint8_t analog_x, uint8_t analog_y) {
+	PSPdispDS4State state = pspdisp_ds4_rest_state;
 
 	for (size_t i = 0; i < G_N_ELEMENTS(pspdisp_controller_buttons); i++)
 		if (buttons & pspdisp_controller_buttons[i].psp)
 			state.buttons |= pspdisp_controller_buttons[i].gamepad;
+
+	// The directional pad, by the direction pressed on each axis (none when both are)
+	const int dpad_x = ((buttons & PSPDISP_BUTTON_RIGHT) != 0) - ((buttons & PSPDISP_BUTTON_LEFT) != 0);
+	const int dpad_y = ((buttons & PSPDISP_BUTTON_DOWN) != 0) - ((buttons & PSPDISP_BUTTON_UP) != 0);
+	state.hat = pspdisp_ds4_hat(dpad_x, dpad_y);
 
 	double x = analog_x - PSPDISP_CONTROLLER_CENTER;
 	double y = analog_y - PSPDISP_CONTROLLER_CENTER;
@@ -146,8 +147,9 @@ PSPdispGamepadState pspdisp_controller_map(uint32_t buttons, uint8_t analog_x, u
 
 	if (distance > PSPDISP_CONTROLLER_DEAD_ZONE) {
 		double scale = MIN((distance - PSPDISP_CONTROLLER_DEAD_ZONE) / (PSPDISP_CONTROLLER_CENTER - PSPDISP_CONTROLLER_DEAD_ZONE), 1.0) / distance; // To a distance from 0 to 1
-		state.left_x = (int16_t) lround(x * scale * 32767);
-		state.left_y = (int16_t) lround(y * scale * 32767);
+		// To the range of the left stick, the one of the analog stick of the PSP (from 0 to 255)
+		state.lx = (uint8_t) lround(PSPDISP_CONTROLLER_CENTER * (1 + x * scale));
+		state.ly = (uint8_t) lround(PSPDISP_CONTROLLER_CENTER * (1 + y * scale));
 	}
 
 	return state;
@@ -170,6 +172,6 @@ bool pspdisp_controller_update(PSPdispController *controller, uint32_t buttons, 
 		return true;
 	}
 
-	PSPdispGamepadState state = pspdisp_controller_map(buttons, analog_x, analog_y);
+	PSPdispDS4State state = pspdisp_controller_map(buttons, analog_x, analog_y);
 	return pspdisp_gamepad_update(controller->gamepad, &state);
 }
