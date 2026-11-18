@@ -18,6 +18,24 @@
 # No changelog here (the history is the one of git), so the dates of the package aren't taken from it
 %global source_date_epoch_from_changelog 0
 
+# Stops the daemons run from the package, of every user, however they started (at sign-in, by the app or by hand), as replacing or removing its files leaves them running (see %pre and %preun)
+# Also the ones whose file an older upgrade replaced while they ran
+%global stop_daemons %{expand:
+for pid in $(pgrep -x pspdisp-daemon); do
+	case "$(readlink "/proc/$pid/exe")" in
+		/usr/bin/pspdisp-daemon|'/usr/bin/pspdisp-daemon (deleted)') ;;
+		*) continue ;;
+	esac
+	# Asked to stop as with Ctrl+C (SIGTERM), which it does at once, and ended if it still runs after 5 seconds
+	kill "$pid" 2>/dev/null || continue
+	for _ in $(seq 50); do
+		kill -0 "$pid" 2>/dev/null || continue 2
+		sleep 0.1
+	done
+	kill -KILL "$pid" 2>/dev/null || true
+done
+}
+
 Name:           pspdisp
 Version:        %{pspdisp_version}
 Release:        %{pspdisp_release}
@@ -38,6 +56,14 @@ the PSP (pspdisp-daemon). The PSP app is installed on the PSP itself.
 
 %install
 cp -a %{pspdisp_stage_dir}/. %{buildroot}
+
+# Stops the daemons before an upgrade ($1 is 2, the versions installed once it's done), so %post starts the new one, instead of the old one running on until the next sign-in
+# Not in the %preun of the old version, which runs once the %post of the new one is done
+# Only on a running system (where systemd runs), not in a chroot or a container, the same as %post
+%pre
+if [ "$1" -gt 1 ] && [ -d /run/systemd/system ]; then
+%{stop_daemons}
+fi
 
 # Applies what the package installs at once, without a restart:
 # - the udev rule, which udev only reads again at boot: to /dev/uinput, /dev/uhid, and to a PSP already plugged (any Sony USB device, the rule picks the PSP)
@@ -66,6 +92,12 @@ if [ -d /run/systemd/system ]; then
 		# Quiet, as the unit is missing when the user turned the autostart off
 		systemctl --user -M "$user@" start --no-block app-com.pspdisp.daemon@autostart.service 2>/dev/null || :
 	done
+fi
+
+# Stops the daemons before a removal ($1 is 0, the versions left once it's done), not on upgrade (see %pre)
+%preun
+if [ "$1" -eq 0 ] && [ -d /run/systemd/system ]; then
+%{stop_daemons}
 fi
 
 # The autostart entry is a configuration file, as the files of /etc, so a changed one is kept on upgrade

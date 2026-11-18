@@ -8,7 +8,7 @@
 # - usr/lib/modprobe.d, usr/lib/modules-load.d: the EVDI module loaded at boot with a device, so the daemon only asks for the password to create one when none is free
 # - etc/xdg/autostart: the autostart entry of the daemon, which starts it when a user signs in
 # - usr/share/doc/pspdisp/copyright: the license
-# - DEBIAN: postinst, which applies the udev rule and starts the daemon at once, conffiles, which keeps the changes to the autostart entry on upgrade (as Debian wants for the files of /etc), and the control file, written when the .deb is made (see below)
+# - DEBIAN: postinst, which applies the udev rule and starts the daemon at once, prerm, which stops the daemon before it's removed or upgraded, conffiles, which keeps the changes to the autostart entry on upgrade (as Debian wants for the files of /etc), and the control file, written when the .deb is made (see below)
 # `make` makes it in build/deb, if dpkg-shlibdeps is installed (otherwise it's skipped, with a note).
 
 # The folder of this file, absolute (and not ending with /), as the paths in an included Makefile are relative to where make runs
@@ -48,7 +48,7 @@ $(DEB_DIR):
 # A folder's date doesn't tell when its files changed, so its target is a file touched once it's all staged
 $(DEB_STAGE): $(BIN_DIR)/pspdisp-ui $(BIN_DIR)/pspdisp-daemon $(UI_SRC_DIR)/com.pspdisp.ui.desktop $(UI_SRC_DIR)/com.pspdisp.ui.svg \
 		$(DAEMON_SRC_DIR)/com.pspdisp.daemon.desktop $(DAEMON_SRC_DIR)/60-pspdisp.rules $(DEB_EVDI_SRC_DIR)/modprobe.conf $(DEB_EVDI_SRC_DIR)/modules-load.conf \
-		$(DEB_SRC_DIR)/postinst $(DEB_SRC_DIR)/deb.mk | $(DEB_DIR)
+		$(DEB_SRC_DIR)/postinst $(DEB_SRC_DIR)/prerm $(DEB_SRC_DIR)/deb.mk | $(DEB_DIR)
 	rm -rf $(DEB_STAGE_DIR)
 	install -Dm755 -s -t $(DEB_STAGE_DIR)/usr/bin $(BIN_DIR)/pspdisp-ui $(BIN_DIR)/pspdisp-daemon
 	install -Dm644 -t $(DEB_STAGE_DIR)/usr/share/applications $(UI_SRC_DIR)/com.pspdisp.ui.desktop
@@ -58,7 +58,7 @@ $(DEB_STAGE): $(BIN_DIR)/pspdisp-ui $(BIN_DIR)/pspdisp-daemon $(UI_SRC_DIR)/com.
 	install -Dm644 $(DEB_EVDI_SRC_DIR)/modules-load.conf $(DEB_STAGE_DIR)/usr/lib/modules-load.d/pspdisp.conf
 	install -Dm644 -t $(DEB_STAGE_DIR)/etc/xdg/autostart $(DAEMON_SRC_DIR)/com.pspdisp.daemon.desktop
 	install -Dm644 $(DESKTOP_SRC_DIR)/../../LICENSE $(DEB_STAGE_DIR)/usr/share/doc/pspdisp/copyright
-	install -Dm755 -t $(DEB_STAGE_DIR)/DEBIAN $(DEB_SRC_DIR)/postinst
+	install -Dm755 -t $(DEB_STAGE_DIR)/DEBIAN $(DEB_SRC_DIR)/postinst $(DEB_SRC_DIR)/prerm
 	echo /etc/xdg/autostart/com.pspdisp.daemon.desktop > $(DEB_STAGE_DIR)/DEBIAN/conffiles
 	touch $@
 
