@@ -25,6 +25,8 @@ optdepends=('pipewire: for the sound'
             'polkit: to ask for the password to create an EVDI device when none is free (e.g. a DisplayLink dock took it)')
 provides=('pspdisp')
 conflicts=('pspdisp')
+# No debug package (pspdisp-git-debug), as the .deb and the RPM have none: the debug option of makepkg, on by default, builds the programs with -g to put their symbols in it
+options=('!debug')
 install=pspdisp.install
 source=('PSPdisp::git+https://github.com/net-0/PSPdisp.git')
 sha256sums=('SKIP')
