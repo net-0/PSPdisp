@@ -51,9 +51,10 @@
 typedef struct {
 	const char *name; // Its name, for the messages
 	GMutex mutex; // Guards the fields below
-	GCond cond; // Signaled when `wanted` changes, or the daemon stops
+	GCond cond; // Signaled when the settings about it change, or the daemon stops
 	bool wanted; // If the settings ask for it
 	uint32_t port; // The TCP port, for WLAN
+	bool has_password; // If a password is set, for WLAN (its server doesn't start without one)
 	GCancellable *round; // Cancelled to end the round running (`NULL` if none)
 	PSPdispWLAN *wlan; // The WLAN server listening, to change its password (`NULL` if none)
 } PSPdispDaemonTransport;
@@ -286,16 +287,18 @@ void pspdisp_daemon_serve(PSPdispDaemon *daemon, PSPdispDaemonLink *link, const 
  * @param transport The transport.
  * @param wanted If it's wanted.
  * @param port The TCP port, for WLAN.
+ * @param has_password If a password is set, for WLAN.
  */
-void pspdisp_daemon_transport_update(PSPdispDaemonTransport *transport, bool wanted, uint32_t port) {
+void pspdisp_daemon_transport_update(PSPdispDaemonTransport *transport, bool wanted, uint32_t port, bool has_password) {
 	g_mutex_lock(&transport->mutex);
 
-	if (wanted != transport->wanted || (wanted && port != transport->port)) {
+	if (wanted != transport->wanted || (wanted && (port != transport->port || has_password != transport->has_password))) {
 		if (wanted != transport->wanted)
 			g_message("%s mode %s", transport->name, wanted ? "enabled" : "disabled");
 
 		transport->wanted = wanted;
 		transport->port = port;
+		transport->has_password = has_password;
 		if (transport->round != NULL)
 			g_cancellable_cancel(transport->round);
 		g_cond_broadcast(&transport->cond);
@@ -341,6 +344,18 @@ void pspdisp_daemon_transport_end(PSPdispDaemonTransport *transport, GCancellabl
 		g_clear_object(&transport->round);
 	g_mutex_unlock(&transport->mutex);
 	g_object_unref(round);
+}
+
+/**
+ * @brief Wait on the thread of a transport until its round is cancelled (e.g. its settings changed).
+ *
+ * @param transport The transport.
+ * @param round The cancellable of the round.
+ */
+void pspdisp_daemon_transport_wait(PSPdispDaemonTransport *transport, GCancellable *round) {
+	g_mutex_lock(&transport->mutex);
+	while (!g_cancellable_is_cancelled(round)) g_cond_wait(&transport->cond, &transport->mutex);
+	g_mutex_unlock(&transport->mutex);
 }
 
 /**
@@ -456,6 +471,7 @@ void pspdisp_daemon_wlan_serve(PSPdispDaemon *daemon, PSPdispWLAN *wlan, GCancel
 /**
  * @brief Body of the WLAN thread: start the WLAN server and serve the PSPs, round after round, while WLAN is wanted, until the daemon stops.
  *
+ * It doesn't start without a password, as anyone on the network could connect and see the desktop, so it waits for one.
  * When the server can't start (e.g. its port is used by another program), it's tried again from time to time.
  *
  * @param daemon The daemon.
@@ -469,12 +485,19 @@ gpointer pspdisp_daemon_wlan_thread(PSPdispDaemon *daemon) {
 
 	while ((round = pspdisp_daemon_transport_begin(transport, daemon->cancellable, &port)) != NULL) {
 		PSPdispDaemonSnapshot *snapshot = pspdisp_daemon_snapshot_store_get(daemon->snapshot_store);
+		const bool has_password = snapshot->settings.wlan_password[0] != '\0';
 		GError *error = NULL;
-		PSPdispWLAN *wlan = pspdisp_wlan_new(port, snapshot->settings.wlan_password, &error);
-		bool no_password = snapshot->settings.wlan_password[0] == '\0';
+		PSPdispWLAN *wlan = has_password ? pspdisp_wlan_new(port, snapshot->settings.wlan_password, &error) : NULL;
 		pspdisp_daemon_snapshot_unref(snapshot);
 
-		if (wlan == NULL) {
+		if (!has_password) {
+			g_warning("The WLAN server doesn't start without a password, as anyone on the network would be able to connect and see the desktop (set one in the desktop app, and the same on the PSP)");
+			pspdisp_daemon_state_set_wlan(daemon->state, false, port, "it needs a password, set one on the \"WLAN\" page and the same on the PSP");
+
+			// Setting a password cancels the round (see `pspdisp_daemon_transport_update()`), so the next one starts the server
+			pspdisp_daemon_transport_wait(transport, round);
+			pspdisp_daemon_state_set_wlan(daemon->state, false, port, NULL);
+		} else if (wlan == NULL) {
 			if (g_strcmp0(last_error, error->message) != 0)
 				g_warning("The WLAN server can't start on port %u, tried again every %d seconds: %s", port, PSPDISP_DAEMON_WLAN_RETRY / 1000, error->message);
 			g_free(last_error);
@@ -491,8 +514,6 @@ gpointer pspdisp_daemon_wlan_thread(PSPdispDaemon *daemon) {
 			g_mutex_unlock(&transport->mutex);
 
 			g_message("WLAN server listening on port %u", port);
-			if (no_password)
-				g_warning("The WLAN mode has no password: anyone on the network can connect and see the desktop (set one in the desktop app, and the same on the PSP)");
 			pspdisp_daemon_state_set_wlan(daemon->state, true, port, NULL);
 
 			pspdisp_daemon_wlan_serve(daemon, wlan, round);
@@ -541,8 +562,8 @@ void pspdisp_daemon_on_snapshot(PSPdispDaemonSnapshot *snapshot, PSPdispDaemon *
 	pspdisp_daemon_set_priority(daemon, settings->higher_priority);
 	pspdisp_daemon_state_set_enabled(daemon->state, settings->enabled);
 	pspdisp_daemon_state_set_usb(daemon->state, usb);
-	pspdisp_daemon_transport_update(&daemon->usb_transport, usb, 0);
-	pspdisp_daemon_transport_update(&daemon->wlan_transport, settings->enabled && settings->use_wlan, PSPDISP_WLAN_PORT + settings->wlan_port_offset);
+	pspdisp_daemon_transport_update(&daemon->usb_transport, usb, 0, false);
+	pspdisp_daemon_transport_update(&daemon->wlan_transport, settings->enabled && settings->use_wlan, PSPDISP_WLAN_PORT + settings->wlan_port_offset, settings->wlan_password[0] != '\0');
 
 	g_mutex_lock(&daemon->wlan_transport.mutex);
 	if (daemon->wlan_transport.wlan != NULL)

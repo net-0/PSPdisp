@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# PKGBUILD - Package of PSPdisp for Arch Linux, in the AUR
+#
+# Copyright © 2026 Arthur Neto
+#
+# Built by makepkg from the latest commit of main, as each commit there is a release (CD tags it), so this file doesn't change with each release: pkgver() reads the version from the tag.
+# It installs what the .deb does (see ../deb/deb.mk): the programs, the desktop entry of the app and its icon, the udev rule, the EVDI module loaded at boot with a device, the autostart entry of the daemon, and the license.
+# The hooks of pacman apply the udev rule and load the EVDI module at once, and pspdisp.install starts the daemon for the users signed in to a desktop, and tells when the module can't be loaded.
+# Published in the AUR with pspdisp.install and its .SRCINFO (`makepkg --printsrcinfo > .SRCINFO`).
+
+# Maintainer: Arthur Neto <arthur@net-0.dev>
+
+pkgname=pspdisp-git
+pkgver=0.7.0
+pkgrel=1
+pkgdesc='Use a PSP as a display of the computer'
+arch=('x86_64')
+url='https://github.com/net-0/PSPdisp'
+license=('BSD-3-Clause')
+# The libraries the programs link, and the EVDI kernel module with its library (evdi-dkms, in the AUR too, built for each kernel)
+depends=('evdi-dkms' 'glib2' 'glibc' 'gtk4' 'libgusb' 'libjpeg-turbo' 'libpipewire' 'libxcb' 'libxkbcommon' 'libxkbcommon-x11' 'wayland')
+makedepends=('git')
+optdepends=('pipewire: for the sound'
+            'polkit: to ask for the password to create an EVDI device when none is free (e.g. a DisplayLink dock took it)')
+provides=('pspdisp')
+conflicts=('pspdisp')
+# No debug package (pspdisp-git-debug), as the .deb and the RPM have none: the debug option of makepkg, on by default, builds the programs with -g to put their symbols in it
+options=('!debug')
+install=pspdisp.install
+source=('PSPdisp::git+https://github.com/net-0/PSPdisp.git')
+sha256sums=('SKIP')
+
+# The version from the last tag, in the order of pacman: v0.7.0-3-gf74cc8f becomes 0.7.0.r3.gf74cc8f (after 0.7.0, before 0.7.1)
+pkgver() {
+	cd PSPdisp
+	git describe --long --tags | sed -e 's/^v//' -e 's/-/.r/' -e 's/-/./'
+}
+
+build() {
+	make -C PSPdisp desktop
+}
+
+package() {
+	cd PSPdisp
+	install -Dm755 -t "$pkgdir/usr/bin" build/pspdisp-ui build/pspdisp-daemon
+	install -Dm644 -t "$pkgdir/usr/share/applications" src/desktop/ui/com.pspdisp.ui.desktop
+	install -Dm644 -t "$pkgdir/usr/share/icons/hicolor/scalable/apps" src/desktop/ui/com.pspdisp.ui.svg
+	install -Dm644 -t "$pkgdir/usr/lib/udev/rules.d" src/desktop/daemon/60-pspdisp.rules
+	install -Dm644 src/desktop/display/connector/evdi/modprobe.conf "$pkgdir/usr/lib/modprobe.d/00-pspdisp.conf"
+	install -Dm644 src/desktop/display/connector/evdi/modules-load.conf "$pkgdir/usr/lib/modules-load.d/pspdisp.conf"
+	install -Dm644 -t "$pkgdir/etc/xdg/autostart" src/desktop/daemon/com.pspdisp.daemon.desktop
+	install -Dm644 -t "$pkgdir/usr/share/licenses/$pkgname" LICENSE
+}

@@ -11,5 +11,8 @@
 SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="054c", ATTR{idProduct}=="01c9", TAG+="uaccess"
 SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="054c", ATTR{idProduct}=="01ca", TAG+="uaccess"
 
-# The virtual gamepad, keyboard and mouse (some packages already give it, e.g. Steam)
+# The virtual keyboard and mouse of the control files (some packages already give it, e.g. Steam)
 KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"
+
+# The virtual gamepad, a DualShock 4 the kernel drives (see controller/gamepad/uhid.c)
+KERNEL=="uhid", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uhid"

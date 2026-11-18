@@ -9,8 +9,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  linux:
-    name: Build on Linux
+  arch:
+    name: Build on Arch Linux
     runs-on: ubuntu-latest
     container: archlinux:latest
     env:
@@ -45,6 +45,99 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           make desktop
+      - name: Build the package of the AUR
+        run: |
+          useradd -m builder
+          mkdir -p /tmp/aur/src
+          cp src/desktop/installer/arch/PKGBUILD src/desktop/installer/arch/pspdisp.install /tmp/aur
+          git clone "$GITHUB_WORKSPACE" /tmp/aur/src/PSPdisp
+          chown -R builder /tmp/aur
+          cd /tmp/aur
+          su builder -c 'makepkg -e -d'
+
+  debian:
+    name: Build on Debian
+    runs-on: ubuntu-latest
+    container: debian:testing
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - name: Install the dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential \
+            ca-certificates \
+            git \
+            pkgconf \
+            libglib2.0-dev \
+            libgtk-4-dev \
+            libgusb-dev \
+            libpipewire-0.3-dev \
+            libturbojpeg0-dev \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            libxcb1-dev \
+            libwayland-dev \
+            libevdi-dev
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Build
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make desktop
+      - name: Upload the .deb
+        uses: actions/upload-artifact@v7
+        with:
+          name: debian-package
+          path: build/deb/pspdisp_*.deb
+          if-no-files-found: error
+
+  fedora:
+    name: Build on Fedora
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    env:
+      EVDI_VERSION: v1.15.1
+    steps:
+      - name: Install the dependencies
+        run: |
+          dnf install -y \
+            gcc \
+            make \
+            git \
+            pkgconf-pkg-config \
+            rpm-build \
+            glib2-devel \
+            gtk4-devel \
+            libgusb-devel \
+            pipewire-devel \
+            turbojpeg-devel \
+            libxkbcommon-devel \
+            libxkbcommon-x11-devel \
+            libxcb-devel \
+            wayland-devel \
+            libdrm-devel
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Install libevdi
+        run: |
+          git clone --depth 1 --branch "$EVDI_VERSION" https://github.com/DisplayLink/evdi.git /tmp/evdi
+          make -C /tmp/evdi/library
+          make -C /tmp/evdi/library install PREFIX=/usr LIBDIR=/usr/lib64
+          install -Dm644 /tmp/evdi/library/evdi_lib.h /usr/include/evdi_lib.h
+      - name: Build
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make desktop
+      - name: Upload the RPM
+        uses: actions/upload-artifact@v7
+        with:
+          name: fedora-package
+          path: build/rpm/pspdisp-*.rpm
+          if-no-files-found: error
 
   windows:
     name: Build on Windows
