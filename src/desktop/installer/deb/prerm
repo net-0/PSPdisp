@@ -1,0 +1,31 @@
+#!/bin/sh
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# prerm - Run by dpkg before the .deb of PSPdisp is removed or upgraded (see deb.mk)
+#
+# Copyright © 2026 Arthur Neto
+#
+# Stops the daemons run from the package, of every user, however they started (at sign-in, by the app or by hand), as removing its files leaves them running.
+# On upgrade too, so the postinst of the new version starts the new daemon, instead of the old one running on until the next sign-in.
+# Only on a running system (where systemd runs), not in a chroot or a container, the same as postinst.
+
+set -e
+
+if { [ "$1" = "remove" ] || [ "$1" = "upgrade" ]; } && [ -d /run/systemd/system ]; then
+	# Also the ones whose file an older upgrade replaced while they ran
+	for pid in $(pgrep -x pspdisp-daemon); do
+		case "$(readlink "/proc/$pid/exe")" in
+			/usr/bin/pspdisp-daemon|'/usr/bin/pspdisp-daemon (deleted)') ;;
+			*) continue ;;
+		esac
+		# Asked to stop as with Ctrl+C (SIGTERM), which it does at once, and ended if it still runs after 5 seconds
+		kill "$pid" 2>/dev/null || continue
+		for _ in $(seq 50); do
+			kill -0 "$pid" 2>/dev/null || continue 2
+			sleep 0.1
+		done
+		kill -KILL "$pid" 2>/dev/null || true
+	done
+fi
+
+exit 0
