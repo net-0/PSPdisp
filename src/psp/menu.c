@@ -342,8 +342,8 @@ void drawCaption(menuProperties* menuProperty, int selectionIndex)
   if (menuProperty->menuId == MENU_MAIN)
   {
     // Main menu
-    intraFontSetStyle(sansSerifLarge, 1.0f, color, COLOR_BLACK, 0);
-    intraFontSetStyle(sansSerifSmall, 1.0f, color, COLOR_BLACK, 0);
+    intraFontSetStyle(sansSerifLarge, 1.0f, color, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, 0);
+    intraFontSetStyle(sansSerifSmall, 1.0f, color, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, 0);
 
 	intraFontSetEncoding(sansSerifSmall, INTRAFONT_STRING_UTF8);
 
@@ -355,17 +355,17 @@ void drawCaption(menuProperties* menuProperty, int selectionIndex)
     float x;
     if (menuProperty->pageNumber)
     {
-      intraFontSetStyle(sansSerifSmall, 1.0f, color, COLOR_BLACK, 0);
+      intraFontSetStyle(sansSerifSmall, 1.0f, color, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, 0);
       x = intraFontPrint(sansSerifSmall, 10, 20, menuProperty->pageNumber);
     }
     else
       x = 0;
 
-    intraFontSetStyle(sansSerifLarge, 1.0f, color, COLOR_BLACK, 0);
+    intraFontSetStyle(sansSerifLarge, 1.0f, color, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, 0);
     intraFontPrint(sansSerifLarge, 10 + x, 20, menuProperty->caption); 
   }
 
-  intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, INTRAFONT_ALIGN_RIGHT);
+  intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_RIGHT);
 
   int battery = scePowerGetBatteryLifePercent();
 
@@ -378,7 +378,7 @@ void drawCaption(menuProperties* menuProperty, int selectionIndex)
     {
       int timeLeft = scePowerGetBatteryLifeTime();
 
-      intraFontSetStyle(sansSerifSmall, 0.7f, MENU_COLOR_CAPTION, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+      intraFontSetStyle(sansSerifSmall, 0.7f, MENU_COLOR_CAPTION, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
       intraFontPrintf(sansSerifSmall, 460, 12, "%d %%", battery);
 
       if (timeLeft > 0)
@@ -400,7 +400,7 @@ void drawCaption(menuProperties* menuProperty, int selectionIndex)
     batteryOffset += 15;
   }
 
-  intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, INTRAFONT_ALIGN_RIGHT);
+  intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_RIGHT);
 
   // Draw time
   ScePspDateTime time;
@@ -461,21 +461,21 @@ void drawOption(menuProperties* menuProperty, int optionIndex, int selectionInde
   {
     // Buttons
     color = (selectionIndex == optionIndex) ? MENU_COLOR_BUTTON_HIGHLIGHTED : MENU_COLOR_BUTTON;
-    intraFontSetStyle(sansSerifSmall, 1.0f, color, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+    intraFontSetStyle(sansSerifSmall, 1.0f, color, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
     intraFontPrint(sansSerifSmall, 240, MENU_OFFSET_OPTION_Y + offsetY, menuProperty->menuEntries[optionIndex].caption);
     return;
   }
   else
   {
     // Setting caption
-    intraFontSetStyle(sansSerifSmall, 1.0f, color, COLOR_BLACK, INTRAFONT_ALIGN_RIGHT);
+    intraFontSetStyle(sansSerifSmall, 1.0f, color, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_RIGHT);
     intraFontPrint(sansSerifSmall, MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, menuProperty->menuEntries[optionIndex].caption);
   }
 
   // Value
   color = (selectionIndex == optionIndex) ? MENU_COLOR_VALUE_HIGHLIGHTED : MENU_COLOR_VALUE;
 
-  intraFontSetStyle(sansSerifSmall, 1.0f, color, COLOR_BLACK, INTRAFONT_ALIGN_LEFT);
+  intraFontSetStyle(sansSerifSmall, 1.0f, color, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_LEFT);
 
   if (menuProperty->menuEntries[optionIndex].callback != NULL)
   {
@@ -527,7 +527,7 @@ void drawStatus(menuProperties* menuProperty, int selectionIndex)
 {
   int offsetX = 10;
 
-  intraFontSetStyle(sansSerifSmall, 0.9f, MENU_COLOR_CAPTION, COLOR_BLACK, INTRAFONT_ALIGN_LEFT);
+  intraFontSetStyle(sansSerifSmall, 0.9f, MENU_COLOR_CAPTION, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_LEFT);
 
   if ((menuProperty->nextMenuId != MENU_NONE) && (menuProperty->nextMenuId != MENU_NONE))
   {
@@ -578,7 +578,7 @@ void drawStatus(menuProperties* menuProperty, int selectionIndex)
 
   if (menuProperty->menuId != MENU_MAIN)
   {
-    intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, INTRAFONT_ALIGN_RIGHT);
+    intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_RIGHT);
     intraFontPrint(sansSerifSmall, 470, 260, "Back");
     offsetX = intraFontMeasureText(sansSerifSmall, "Back");
 
@@ -1045,7 +1045,7 @@ void menuDrawPleaseWaitScreen()
 
   graphicStartDrawing();
 
-  intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+  intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
   intraFontPrint(sansSerifSmall, 240, 130, "Please wait...");
 
   graphicFinishDrawing(true);
@@ -1070,15 +1070,15 @@ int menuDrawAutostartScreen()
 
     graphicStartDrawing();
 
-    intraFontSetStyle(sansSerifLarge, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
-    intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+    intraFontSetStyle(sansSerifLarge, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
+    intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
 
     if (configAutoMode == 1)
       intraFontPrintf(sansSerifSmall, 240, 110, "Starting WLAN mode in %d seconds...", i / 10);
     else if (configAutoMode == 2)
       intraFontPrintf(sansSerifSmall, 240, 110, "Starting USB mode in %d seconds...", i / 10);
 
-    intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, INTRAFONT_ALIGN_RIGHT);
+    intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_RIGHT);
     intraFontPrint(sansSerifSmall, 470, 260, "Cancel");
     int offsetX = intraFontMeasureText(sansSerifSmall, "Cancel");
 

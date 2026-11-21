@@ -169,12 +169,12 @@ void usbDrawWaitingForDataMessage(bool enteringPowerSaveMode, bool clearScreen, 
 
   graphicStartDrawing();
 
-  intraFontSetStyle(sansSerifLarge, 1.0f, COLOR_WHITE, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+  intraFontSetStyle(sansSerifLarge, 1.0f, COLOR_WHITE, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
   intraFontPrint(sansSerifLarge, 240, 125, "Waiting for data...");
 
   if (enteringPowerSaveMode)
   {
-    intraFontSetStyle(sansSerifSmall, 1.0f, COLOR_WHITE, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+    intraFontSetStyle(sansSerifSmall, 1.0f, COLOR_WHITE, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
     intraFontPrint(sansSerifSmall, 240, 200, "Entering power save mode in 10 seconds.");
   }
 

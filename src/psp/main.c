@@ -29,8 +29,6 @@
 #include "msgdlg.h"
 #include "kernel/kernel.h"
 
-#include "library/libccc.c"
-#include "library/intraFont.c"
 #include "library/danzeff.c"
 #include "audio.c"
 #include "com.c"

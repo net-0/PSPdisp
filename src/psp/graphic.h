@@ -27,7 +27,7 @@
 #include "shared.h"
 
 // Intrafont library
-#include "library/intraFont.h"
+#include <intraFont.h>
 
 // Danzeff keyboard
 #include "library/danzeff.h"
@@ -57,6 +57,9 @@ void* l_frameBuffer;
 #define ROTATION_90 1
 #define ROTATION_180 2
 #define ROTATION_270 3
+
+// The angle of the text, in degrees, given to intraFontSetStyle()
+#define TEXT_ANGLE_HORIZONTAL 0.0f
 
 
 
