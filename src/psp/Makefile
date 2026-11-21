@@ -64,7 +64,7 @@ PSP_APP_CPPFLAGS := $(PSP_CPPFLAGS) -D_PSP_FW_VERSION=371 -DPSPDISP_VERSION='"$(
 # A PRX started as a user program (prxspecs gives its start files)
 PSP_APP_LDFLAGS  := $(PSP_LDFLAGS) -specs=$(PSPSDK)/lib/prxspecs
 # The libraries, with the libjpeg of the old app, built with 4 bytes per pixel (see libjpeg/libjpeg.diff)
-PSP_APP_LDLIBS   := -lpspaudio -lpng -lz -lpspusb -lpspgum -lpspgu -lm -lpsppower -lpspjpeg -lpsputility -lpspkubridge -lpsprtc $(PSP_SRC_DIR)/libjpeg/libjpeg.a \
+PSP_APP_LDLIBS   := -lpspaudio -lpng -lz -lintrafont -lpspusb -lpspgum -lpspgu -lm -lpsppower -lpspjpeg -lpsputility -lpspkubridge -lpsprtc $(PSP_SRC_DIR)/libjpeg/libjpeg.a \
 	-lpspdebug -lpspdisplay -lpspge -lpspctrl -lpspnet -lpspnet_apctl
 
 # The stubs of the functions the app calls in the kernel modules, which the system links once the app loads them

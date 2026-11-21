@@ -300,7 +300,7 @@ void netdrawConnectingMessage(char *ipText, char *resolvedIp)
   else
     sprintf(buffer, "Connecting to '%s:%d'.", ipText, NET_PORT + configWlanPortOffset);
 
-  intraFontSetStyle(sansSerifLarge, 1.0f, COLOR_WHITE, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+  intraFontSetStyle(sansSerifLarge, 1.0f, COLOR_WHITE, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
   intraFontPrint(sansSerifLarge, 240, 125, buffer);
 
   if (resolvedIp)
@@ -309,7 +309,7 @@ void netdrawConnectingMessage(char *ipText, char *resolvedIp)
     intraFontPrint(sansSerifLarge, 240, 145, buffer);
   }
 
-  intraFontSetStyle(sansSerifSmall, 1.0f, COLOR_WHITE, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+  intraFontSetStyle(sansSerifSmall, 1.0f, COLOR_WHITE, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
   intraFontPrint(sansSerifSmall, 240, 180, "The IP address can be changed in the settings menu.");
 
   graphicFinishDrawing(true);

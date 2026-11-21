@@ -16,12 +16,12 @@
 #include <pspsdk.h>
 #include <pspkernel.h>
 #include <pspusb.h>
+#include <intraFont.h>
 #include "usbhostfs/usbasync.h"
 #include "common.h"
 #include "utils.h"
 #include "config.h"
 #include "graphic.h"
-#include "library/intraFont.h"
 
 
 #define USB_HOSTFSDRIVER_NAME "USBHostFSDriver"
