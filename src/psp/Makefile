@@ -94,6 +94,14 @@ $(PSP_BIN_DIR)/PARAM.SFO: | $(PSP_BIN_DIR)
 $(PSP_GAME_DIR)/EBOOT.PBP: $(PSP_BIN_DIR)/PARAM.SFO $(PSP_SRC_DIR)/ICON0.PNG $(PSP_BIN_DIR)/pspdisp.prx | $(PSP_GAME_DIR)
 	pack-pbp $@ $(PSP_BIN_DIR)/PARAM.SFO $(PSP_SRC_DIR)/ICON0.PNG NULL NULL NULL NULL $(PSP_BIN_DIR)/pspdisp.prx NULL
 
+# The images of the on-screen keyboard (Danzeff), which it loads from the graphics folder next to the app
+PSP_GRAPHICS := $(patsubst $(PSP_SRC_DIR)/%,$(PSP_GAME_DIR)/%,$(wildcard $(PSP_SRC_DIR)/graphics/*.png))
+
+ALL += $(PSP_GRAPHICS)
+
+$(PSP_GAME_DIR)/graphics/%.png: $(PSP_SRC_DIR)/graphics/%.png
+	install -Dm644 $< $@
+
 # Include the dependencies to build the object of the app, the .d file is written when it's compiled
 -include $(DEP_DIR)/pspdisp.o.d
 
@@ -106,7 +114,7 @@ $(info zip wasn't found, so the .zip of the PSP app isn't made: install it to ma
 endif
 
 # Made again from scratch, as zip only adds to an archive that exists
-$(PSP_ZIP): $(PSP_GAME_DIR)/EBOOT.PBP $(PSP_GAME_DIR)/kernel.prx $(PSP_GAME_DIR)/usbhostfs.prx
+$(PSP_ZIP): $(PSP_GAME_DIR)/EBOOT.PBP $(PSP_GAME_DIR)/kernel.prx $(PSP_GAME_DIR)/usbhostfs.prx $(PSP_GRAPHICS)
 	rm -f $@
 	cd $(PSP_BIN_DIR) && zip -r -X $@ PSP
 
