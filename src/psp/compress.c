@@ -347,6 +347,8 @@ void compressDecompressJpeg(comFrameHeader* frameHeader)
       l_libjpegCinfo.do_fancy_upsampling = FALSE;
       l_libjpegCinfo.do_block_smoothing = FALSE;
       l_libjpegCinfo.dct_method = JDCT_FASTEST;
+      // 4 bytes per pixel, as the texture of the frame (GU_PSM_8888)
+      l_libjpegCinfo.out_color_space = JCS_EXT_RGBA;
 
 
       if (jpeg_start_decompress(&l_libjpegCinfo))
@@ -360,7 +362,7 @@ void compressDecompressJpeg(comFrameHeader* frameHeader)
         }
         jpeg_finish_decompress(&l_libjpegCinfo);
       }
-      sceKernelDcacheWritebackInvalidateRange(source->outputBuffer, source->bufferSize);
+      sceKernelDcacheWritebackInvalidateAll();
     }
   }
 }
