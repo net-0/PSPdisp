@@ -90,9 +90,9 @@ jobs:
       - name: Upload the .deb
         uses: actions/upload-artifact@v7
         with:
-          name: debian-package
           path: build/deb/pspdisp_*.deb
           if-no-files-found: error
+          archive: false
 
   fedora:
     name: Build on Fedora
@@ -135,9 +135,9 @@ jobs:
       - name: Upload the RPM
         uses: actions/upload-artifact@v7
         with:
-          name: fedora-package
           path: build/rpm/pspdisp-*.rpm
           if-no-files-found: error
+          archive: false
 
   windows:
     name: Build on Windows
@@ -175,9 +175,9 @@ jobs:
       - name: Upload the Windows Setup
         uses: actions/upload-artifact@v7
         with:
-          name: windows-setup
           path: build/inno/PSPdisp-*-setup.exe
           if-no-files-found: error
+          archive: false
 
   psp:
     name: Build for the PSP
@@ -196,6 +196,6 @@ jobs:
       - name: Upload the PSP app
         uses: actions/upload-artifact@v7
         with:
-          name: psp-app
           path: build/psp/PSPdisp-*-psp.zip
           if-no-files-found: error
+          archive: false
