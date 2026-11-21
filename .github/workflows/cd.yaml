@@ -59,7 +59,7 @@ jobs:
       contents: read
     needs:
       - versioning
-    uses: ./.github/workflows/ci.yaml
+    uses: ./.github/workflows/build.yaml
 
   release:
     name: Publish release
