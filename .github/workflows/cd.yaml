@@ -103,6 +103,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           path: dist
+          merge-multiple: true
           skip-decompress: true
       - name: Publish release
         uses: ncipollo/release-action@v1
