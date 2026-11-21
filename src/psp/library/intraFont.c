@@ -218,7 +218,8 @@ int intraFontGetGlyph(unsigned char *data, unsigned long *b, unsigned char glyph
     if (glyphtype & PGF_CHARGLYPH) {
         (*b) += 14; //skip offset pos value of shadow
     } else {
-        (*b) += intraFontGetV(14,data,b)*8+14; //skip to shadow 
+        const unsigned long glyphStart = *b; // The offset of the shadow is from the start of the glyph, read before intraFontGetV() moves b past it
+        (*b) = glyphStart + intraFontGetV(14,data,b)*8+14; //skip to shadow
     }
     glyph->width=intraFontGetV(7,data,b);
 	glyph->height=intraFontGetV(7,data,b);
