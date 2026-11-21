@@ -39,19 +39,40 @@ int l_timeFormat;
 unsigned int l_previousMenuButtons = 0;
 
 
-// Embedded button glyphs
-extern unsigned char glyphCross_start[];
-extern unsigned char glyphCircle_start[];
-extern unsigned char glyphTriangle_start[];
-extern unsigned char glyphSquare_start[];
-extern unsigned char glyphLeftRight_start[];
-extern unsigned char glyphUpDown_start[];
-extern unsigned char glyphLeftRight_start[];
-extern unsigned char glyphShoulder_start[];
-extern unsigned char glyphBattery0_start[];
-extern unsigned char glyphBattery1_start[];
-extern unsigned char glyphBattery2_start[];
-extern unsigned char glyphBattery3_start[];
+// Embedded button glyphs, textures aligned as the GPU reads them
+alignas(16) unsigned char glyphCross[] = {
+#embed "glyphs/cross.raw"
+};
+alignas(16) unsigned char glyphCircle[] = {
+#embed "glyphs/circle.raw"
+};
+alignas(16) unsigned char glyphTriangle[] = {
+#embed "glyphs/triangle.raw"
+};
+alignas(16) unsigned char glyphSquare[] = {
+#embed "glyphs/square.raw"
+};
+alignas(16) unsigned char glyphLeftRight[] = {
+#embed "glyphs/leftright.raw"
+};
+alignas(16) unsigned char glyphUpDown[] = {
+#embed "glyphs/updown.raw"
+};
+alignas(16) unsigned char glyphShoulder[] = {
+#embed "glyphs/shoulder.raw"
+};
+alignas(16) unsigned char glyphBattery0[] = {
+#embed "glyphs/battery0.raw"
+};
+alignas(16) unsigned char glyphBattery1[] = {
+#embed "glyphs/battery1.raw"
+};
+alignas(16) unsigned char glyphBattery2[] = {
+#embed "glyphs/battery2.raw"
+};
+alignas(16) unsigned char glyphBattery3[] = {
+#embed "glyphs/battery3.raw"
+};
 
 
 // Menuentry options
@@ -327,7 +348,7 @@ void drawCaption(menuProperties* menuProperty, int selectionIndex)
 	intraFontSetEncoding(sansSerifSmall, INTRAFONT_STRING_UTF8);
 
     intraFontPrint(sansSerifLarge,  10, 20, "PSPdisp");
-    intraFontPrint(sansSerifSmall, 100, 20, "v0.6.1 \xC2\xA9 2008 - 2015 JJS");
+    intraFontPrint(sansSerifSmall, 100, 20, PSPDISP_VERSION " \xC2\xA9 2008 - 2015 JJS");
   }
   else
   {
@@ -581,36 +602,36 @@ void drawGlyph(int glyph, int x, int y)
   switch (glyph)
   {
     case MENU_GLYPH_CROSS:
-      graphicDrawTexturedRectangle(&glyphCross_start, x, y, 16, 16);
+      graphicDrawTexturedRectangle(glyphCross, x, y, 16, 16);
       break;
     case MENU_GLYPH_CIRCLE:
-      graphicDrawTexturedRectangle(&glyphCircle_start, x, y, 16, 16);
+      graphicDrawTexturedRectangle(glyphCircle, x, y, 16, 16);
       break;
     case MENU_GLYPH_TRIANGLE:
-      graphicDrawTexturedRectangle(&glyphTriangle_start, x, y, 16, 16);
+      graphicDrawTexturedRectangle(glyphTriangle, x, y, 16, 16);
       break;
     case MENU_GLYPH_SQUARE:
       break;
     case MENU_GLYPH_LEFT_RIGHT:
-      graphicDrawTexturedRectangle(&glyphLeftRight_start, x, y, 16, 16);
+      graphicDrawTexturedRectangle(glyphLeftRight, x, y, 16, 16);
       break;
     case MENU_GLYPH_UP_DOWN:
-      graphicDrawTexturedRectangle(&glyphUpDown_start, x, y, 16, 16);
+      graphicDrawTexturedRectangle(glyphUpDown, x, y, 16, 16);
       break;
     case MENU_GLYPH_SHOULDER:
-      graphicDrawTexturedRectangle(&glyphShoulder_start, x, y, 32, 16);
+      graphicDrawTexturedRectangle(glyphShoulder, x, y, 32, 16);
       break;
     case MENU_GLYPH_BATTERY0:
-      graphicDrawTexturedRectangle(&glyphBattery0_start, x, y, 16, 16);
+      graphicDrawTexturedRectangle(glyphBattery0, x, y, 16, 16);
       break;
     case MENU_GLYPH_BATTERY1:
-      graphicDrawTexturedRectangle(&glyphBattery1_start, x, y, 16, 16);
+      graphicDrawTexturedRectangle(glyphBattery1, x, y, 16, 16);
       break;
     case MENU_GLYPH_BATTERY2:
-      graphicDrawTexturedRectangle(&glyphBattery2_start, x, y, 16, 16);
+      graphicDrawTexturedRectangle(glyphBattery2, x, y, 16, 16);
       break;
     case MENU_GLYPH_BATTERY3:
-      graphicDrawTexturedRectangle(&glyphBattery3_start, x, y, 16, 16);
+      graphicDrawTexturedRectangle(glyphBattery3, x, y, 16, 16);
       break;
   }
 }

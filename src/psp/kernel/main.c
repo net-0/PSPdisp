@@ -10,6 +10,8 @@
 */
 
 #include "kernel.h"
+#include <pspsyscon.h>
+#include <pspsysmem_kernel.h>
 
 
 PSP_MODULE_INFO("kernel", PSP_MODULE_KERNEL, 1, 1);

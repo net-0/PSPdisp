@@ -21,6 +21,7 @@
 #include <pspusbbus.h>
 #include "usbhostfs.h"
 #include "usbasync.h"
+#include "host_driver.c"
 
 int psplinkSetK1(int k1);
 

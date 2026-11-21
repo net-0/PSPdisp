@@ -29,6 +29,23 @@
 #include "msgdlg.h"
 #include "kernel/kernel.h"
 
+#include "library/libccc.c"
+#include "library/intraFont.c"
+#include "library/danzeff.c"
+#include "audio.c"
+#include "com.c"
+#include "compress.c"
+#include "config.c"
+#include "debug.c"
+#include "graphic.c"
+#include "menu.c"
+#include "msgdlg.c"
+#include "osk.c"
+#include "power.c"
+#include "usb.c"
+#include "utils.c"
+#include "wlan.c"
+
 
 
 // Set to true by the exit callback
