@@ -178,3 +178,24 @@ jobs:
           name: windows-setup
           path: build/inno/PSPdisp-*-setup.exe
           if-no-files-found: error
+
+  psp:
+    name: Build for the PSP
+    runs-on: ubuntu-latest
+    container: ghcr.io/pspdev/pspdev:latest
+    steps:
+      - name: Install the dependencies
+        run: apk add --no-cache zip
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Build
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make psp
+      - name: Upload the PSP app
+        uses: actions/upload-artifact@v7
+        with:
+          name: psp-app
+          path: build/psp/PSPdisp-*-psp.zip
+          if-no-files-found: error

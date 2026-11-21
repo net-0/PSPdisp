@@ -114,13 +114,18 @@ jobs:
         with:
           name: fedora-package
           path: dist
+      - name: Download the PSP app
+        uses: actions/download-artifact@v8
+        with:
+          name: psp-app
+          path: dist
       - name: Publish release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ needs.versioning.outputs.tag }}
           name: ${{ needs.versioning.outputs.tag }}
           body: ${{ steps.format-changelog.outputs.changes }}
-          artifacts: dist/PSPdisp-*-setup.exe,dist/pspdisp_*.deb,dist/pspdisp-*.rpm
+          artifacts: dist/PSPdisp-*-setup.exe,dist/pspdisp_*.deb,dist/pspdisp-*.rpm,dist/PSPdisp-*-psp.zip
           artifactErrorsFailBuild: true
           prerelease: ${{ github.ref_name != 'main' }}
           makeLatest: ${{ github.ref_name == 'main' }}
