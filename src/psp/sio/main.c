@@ -19,7 +19,7 @@ PSP_MAIN_THREAD_ATTR(0);
 
 
 
-void kernelDebugSioInit(int baudrate)
+int kernelDebugSioInit(int baudrate)
 {
   u32 k1;
   k1 = pspSdkSetK1(0); 
@@ -28,7 +28,8 @@ void kernelDebugSioInit(int baudrate)
 //  pspDebugSioInstallKprintf();
 //  pspDebugInstallStdoutHandler(NULL);
   pspDebugInstallStdoutHandler(pspDebugSioPutData);
-  pspSdkSetK1(k1);  
+  pspSdkSetK1(k1);
+  return 0;
 }
 
 
@@ -39,6 +40,7 @@ int kernelDebugSioTerm()
   pspDebugInstallStdoutHandler(NULL);
   //pspDebugSioDisableKprintf();
   pspSdkSetK1(k1);
+  return 0;
 }
 
 

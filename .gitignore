@@ -1,14 +1,3 @@
-# --- PSP build output (psp/source) ---
-*.o
-*.elf
-*.prx
-*.PBP
-PARAM.SFO
-
-# Vendored prebuilt library is tracked
-*.a
-!psp/source/libjpeg/libjpeg.a
-
 # --- Generic C build output ---
 *.d
 build/

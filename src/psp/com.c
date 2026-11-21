@@ -15,7 +15,7 @@
 
 #include "menu.h"
 extern menuEntry pcSettingsDisplay[4];
-extern menuEntry pcSettingsMisc[2];
+extern menuEntry pcSettingsMisc[4];
 
 
 #define CHECK_WLAN_RESULT { if ((g_comMode == COM_MODE_WLAN) && !g_netConnected) { DEBUG_PRINTF("comLoop: CHECK_WLAN_RESULT reports disconnect\n"); return; } }
