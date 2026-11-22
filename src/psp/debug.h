@@ -17,7 +17,6 @@
 #include <pspdebug.h>
 #include "common.h"
 #include "utils.h"
-#include "sio/sio.h"
 
 
 #define DEBUG 0
