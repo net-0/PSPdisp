@@ -16,12 +16,11 @@
 #include <pspthreadman.h>
 #include "common.h"
 #include "wlan.h"
-#include "usbhostfs/usbasync.h"
+#include "usb/usb.h"
 #include "audio.h"
 #include "shared.h"
 
 
-#define COM_ALIGNED_BUFFER_SIZE 100
 #define COM_IMAGE_BUFFER_SIZE (400 * 1024)
 #define COM_AUDIO_BUFFER_SIZE (20 * 2688)
 

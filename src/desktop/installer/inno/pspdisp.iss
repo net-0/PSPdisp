@@ -70,7 +70,7 @@ Name: "custom"; Description: "Custom installation"; Flags: iscustom
 Name: "main"; Description: "PSPdisp (the desktop app and the daemon)"; Types: full custom; Flags: fixed
 Name: "display"; Description: "Virtual display (IddCx driver), the display the PSP shows"; Types: full
 Name: "gamepad"; Description: "Virtual gamepad (a DualShock 4), driven by the PSP buttons"; Types: full
-Name: "winusb"; Description: "WinUSB driver of the PSP, for the ""Type B"" USB mode of the PSP app"; Types: full
+Name: "winusb"; Description: "WinUSB driver of the PSP, for the USB mode of the PSP app (type B or C)"; Types: full
 
 [Tasks]
 Name: "autostart"; Description: "Start PSPdisp when I sign in, so it waits for the PSP"

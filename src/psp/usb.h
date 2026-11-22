@@ -17,16 +17,11 @@
 #include <pspkernel.h>
 #include <pspusb.h>
 #include <intraFont.h>
-#include "usbhostfs/usbasync.h"
+#include "usb/usb.h"
 #include "common.h"
 #include "utils.h"
 #include "config.h"
 #include "graphic.h"
-
-
-#define USB_HOSTFSDRIVER_NAME "USBHostFSDriver"
-#define USB_HOSTFSDRIVER_PID_TYPE_B  (0x1C9)
-#define USB_HOSTFSDRIVER_PID_TYPE_C  (0x1CA)
 
 
 void usbEnterLoop();

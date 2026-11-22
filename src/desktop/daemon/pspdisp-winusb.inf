@@ -28,7 +28,7 @@ PnpLockdown = 1
 [Manufacturer]
 %Provider% = PSPdisp, NTamd64, NTarm64, NTx86
 
-; A PSP running the PSPdisp app in USB mode: the USBHostFS driver of PSPLink shows up as a Sony device, as type B (01C9, the default) or type C (01CA)
+; A PSP running the PSPdisp app in USB mode: the USB driver of the app shows up as a Sony device, as type B (01C9) or type C (01CA, the default)
 [PSPdisp.NTamd64]
 %PSP.TypeB% = PSP_Install, USB\VID_054C&PID_01C9
 %PSP.TypeC% = PSP_Install, USB\VID_054C&PID_01CA

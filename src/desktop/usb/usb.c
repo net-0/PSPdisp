@@ -9,7 +9,7 @@
 /*
  * The USB link with a PSP running the PSPdisp app in USB mode.
  *
- * The app runs the USBHostFS driver of PSPLink, which shows up as a Sony device with two bulk endpoints (0x02 to the PSP, 0x81 from it).
+ * The app runs its USB driver, which shows up as a Sony device with two bulk endpoints (0x02 to the PSP, 0x81 from it), as USBHostFS of PSPLink does.
  * The link waits for a PSP to be plugged, opens it and does the handshake of USBHostFS (see `pspdisp_usb_handshake()`), then the data goes through those endpoints as it is.
  *
  * It goes through GUsb, the GObject library over libusb, the same on every platform.
@@ -21,7 +21,7 @@
  * Every wait and every transfer can be aborted with a `GCancellable`, e.g. to quit at once.
  *
  * On Linux, the udev rule `daemon/60-pspdisp.rules` gives the PSP to the user.
- * On Windows, the PSP needs the WinUSB driver: the "WinUSB (PSP Type C)" USB mode of the PSP app, or WinUSB installed with `daemon/pspdisp-winusb.inf` (or Zadig) for type B.
+ * On Windows, the PSP needs the WinUSB driver, installed with `daemon/pspdisp-winusb.inf` (or Zadig), as type B or C.
  */
 
 #pragma once
@@ -35,8 +35,8 @@
 #define PSPDISP_USB_HOST_NAME "GUsb" // User friendly name of the USB host
 
 #define PSPDISP_USB_VENDOR_ID         0x054C // Sony
-#define PSPDISP_USB_PRODUCT_ID_TYPE_B 0x01C9 // USBHostFS, as type B (the default "USB driver" of the PSP app)
-#define PSPDISP_USB_PRODUCT_ID_TYPE_C 0x01CA // USBHostFS, as type C
+#define PSPDISP_USB_PRODUCT_ID_TYPE_B 0x01C9 // The PSP app, as type B
+#define PSPDISP_USB_PRODUCT_ID_TYPE_C 0x01CA // The PSP app, as type C (its default "USB driver")
 #define PSPDISP_USB_INTERFACE         0      // The only interface of the PSP, with both endpoints
 #define PSPDISP_USB_ENDPOINT_OUT      0x02   // Bulk endpoint to the PSP
 #define PSPDISP_USB_ENDPOINT_IN       0x81   // Bulk endpoint from the PSP
@@ -49,7 +49,7 @@
 
 // What gives the program access to a PSP it can't open
 #if defined(_WIN32)
-	#define PSPDISP_USB_ACCESS_HINT "use the \"WinUSB (PSP Type C)\" USB mode of the PSP app, or install the WinUSB driver for the PSP (daemon/pspdisp-winusb.inf, or Zadig)"
+	#define PSPDISP_USB_ACCESS_HINT "install the WinUSB driver for the PSP (daemon/pspdisp-winusb.inf, or Zadig)"
 #else
 	#define PSPDISP_USB_ACCESS_HINT "install the udev rule (sudo make install) then plug the PSP again"
 #endif
@@ -84,7 +84,7 @@ typedef struct {
  *
  * @param vendor_id The vendor ID of the device.
  * @param product_id The product ID of the device.
- * @return `true` for the USBHostFS driver of the PSP, as type B or C.
+ * @return `true` for the USB driver of the PSP app, as type B or C.
  */
 bool pspdisp_usb_is_psp(uint32_t vendor_id, uint32_t product_id) {
 	return vendor_id == PSPDISP_USB_VENDOR_ID && (product_id == PSPDISP_USB_PRODUCT_ID_TYPE_B || product_id == PSPDISP_USB_PRODUCT_ID_TYPE_C);

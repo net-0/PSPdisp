@@ -21,7 +21,6 @@ extern menuEntry pcSettingsMisc[4];
 #define CHECK_WLAN_RESULT { if ((g_comMode == COM_MODE_WLAN) && !g_netConnected) return; }
 
 
-char l_alignedBuffer[COM_ALIGNED_BUFFER_SIZE] __attribute__((aligned(64)));
 comSettingsResponse l_response __attribute__((aligned(64)));
 
 
@@ -36,7 +35,7 @@ int readData(void* buffer, int length)
 {
   if (g_comMode == COM_MODE_USB)
   {
-    int result = usbReadRawBulkData(buffer, length);
+    int result = pspdisp_usb_read(buffer, length) ? length : -1;
 
     // Pause a bit on error
     if (result < 0)
@@ -114,14 +113,7 @@ int writeData(void* buffer, int length)
 {
   if (g_comMode == COM_MODE_USB)
   {
-    // Check for 64 byte alignment
-    if (((unsigned int)buffer & 0x3F) != 0)
-    {
-      memcpy(l_alignedBuffer, buffer, length);
-      return usbWriteRawBulkData(l_alignedBuffer, length);
-    }
-    else
-      return usbWriteRawBulkData(buffer, length);
+    return pspdisp_usb_write(buffer, length) ? length : -1;
   }
   else // if (g_comMode == COM_MODE_WLAN)
   {
