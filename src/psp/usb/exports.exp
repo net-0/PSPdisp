@@ -1,0 +1,17 @@
+# The exports of the kernel module of the USB driver (usb.prx), read by psp-build-exports
+PSP_BEGIN_EXPORTS
+
+# The exports the system looks for in a module
+PSP_EXPORT_START(syslib, 0, 0x8000)
+PSP_EXPORT_FUNC(module_start)
+PSP_EXPORT_FUNC(module_stop)
+PSP_EXPORT_VAR(module_info)
+PSP_EXPORT_END
+
+# The functions the app calls, from user mode (see usb.h)
+PSP_EXPORT_START(PSPdispUSB, 0, 0x4001)
+PSP_EXPORT_FUNC(pspdisp_usb_read)
+PSP_EXPORT_FUNC(pspdisp_usb_write)
+PSP_EXPORT_END
+
+PSP_END_EXPORTS
