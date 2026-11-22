@@ -52,8 +52,6 @@ void usbEnterLoop()
 	  powerTermIdleThread();
   }
 
-  DEBUG_PRINTF("usbEnterLoop: now invoking usbTerm()\n");
-
   // Shutdown driver, unload modules
   // But only if the error was not caused by PSPLink
   if (handle != -5)
@@ -74,8 +72,6 @@ int usbInit()
 {
   if (l_usbhostfsModuleId == 0)
     l_usbhostfsModuleId = utilsLoadStartModule("usbhostfs.prx");
- 
-  DEBUG_PRINTF("usbInit: usbhostfsModuleId = 0x%08lX\n", (long)l_usbhostfsModuleId);
 
   if (l_usbhostfsModuleId < 0)
     return -1;
@@ -107,26 +103,13 @@ int usbInit()
 */
 void usbTerm() 
 {
-  int result = 0;
-
   usbAsyncUnregister(4);
 
-  DEBUG_PRINTF("usbTerm: enter\n");
-  result = sceUsbDeactivate(l_currentUsbMode);
+  sceUsbDeactivate(l_currentUsbMode);
+  sceUsbStop(USB_HOSTFSDRIVER_NAME, 0, 0);
+  sceUsbStop(PSP_USBBUS_DRIVERNAME, 0, 0);
 
-  DEBUG_PRINTF("usbTerm: sceUsbDeactive done 0x%08lX\n", (long unsigned int)result);
-
-  result = sceUsbStop(USB_HOSTFSDRIVER_NAME, 0, 0);
-
-  DEBUG_PRINTF("usbTerm: sceUsbStop 1 done 0x%08lX\n", (long unsigned int)result);
-
-  result = sceUsbStop(PSP_USBBUS_DRIVERNAME, 0, 0);
-
-  DEBUG_PRINTF("usbTerm: sceUsbStop 2 done 0x%08lX\n", (long unsigned int)result);
-
-  result = utilsStopUnloadModule(l_usbhostfsModuleId);
-
-  DEBUG_PRINTF("usbTerm: exit 0x%08lX\n", (long unsigned int)result);
+  int result = utilsStopUnloadModule(l_usbhostfsModuleId);
 
   // Unloading is broken on 6.20 TN-C
   if (result != 0x80020136)

@@ -63,7 +63,7 @@ PSP_APP_CPPFLAGS := $(PSP_CPPFLAGS) -D_PSP_FW_VERSION=371 -DPSPDISP_VERSION='"$(
 PSP_APP_LDFLAGS  := $(PSP_LDFLAGS) -specs=$(PSPSDK)/lib/prxspecs
 # The libraries
 PSP_APP_LDLIBS   := -lpspaudio -lpng -lz -lintrafont -lpspusb -lpspgum -lpspgu -lm -lpsppower -lpspjpeg -lpsputility -lpspkubridge -lpsprtc -ljpeg \
-	-lpspdebug -lpspdisplay -lpspge -lpspctrl -lpspnet -lpspnet_apctl
+	-lpspdisplay -lpspge -lpspctrl -lpspnet -lpspnet_apctl
 
 # The stubs of the functions the app calls in the kernel modules, which the system links once the app loads them
 PSP_APP_STUBS := $(KERNEL_SRC_DIR)/kernel.S $(USBHOSTFS_SRC_DIR)/USBHostFS.S

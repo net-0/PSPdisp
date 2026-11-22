@@ -19,7 +19,6 @@
 #include <jpeglib.h>
 #include "common.h"
 #include "com.h"
-#include "debug.h"
 
 
 unsigned char* g_pixelBuffer;

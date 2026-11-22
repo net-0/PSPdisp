@@ -11,7 +11,6 @@
  * $Id: host_driver.c 1954 2006-06-28 17:54:29Z tyranid $
  */
 #include <pspkernel.h>
-#include <pspdebug.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>

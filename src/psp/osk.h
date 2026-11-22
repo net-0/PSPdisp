@@ -14,7 +14,6 @@
 
 #include <pspkernel.h>
 #include <pspdisplay.h>
-#include <pspdebug.h>
 #include <pspgu.h>
 #include <string.h>
 #include <psputility.h>

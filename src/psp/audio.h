@@ -18,7 +18,6 @@
 #include <pspthreadman.h>
 #include "com.h"
 #include "common.h"
-#include "debug.h"
 
 
 

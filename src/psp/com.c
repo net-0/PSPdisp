@@ -18,7 +18,7 @@ extern menuEntry pcSettingsDisplay[4];
 extern menuEntry pcSettingsMisc[4];
 
 
-#define CHECK_WLAN_RESULT { if ((g_comMode == COM_MODE_WLAN) && !g_netConnected) { DEBUG_PRINTF("comLoop: CHECK_WLAN_RESULT reports disconnect\n"); return; } }
+#define CHECK_WLAN_RESULT { if ((g_comMode == COM_MODE_WLAN) && !g_netConnected) return; }
 
 
 char l_alignedBuffer[COM_ALIGNED_BUFFER_SIZE] __attribute__((aligned(64)));
@@ -37,7 +37,6 @@ int readData(void* buffer, int length)
   if (g_comMode == COM_MODE_USB)
   {
     int result = usbReadRawBulkData(buffer, length);
-//    DEBUG_PRINTF("result = %d\n", result);
 
     // Pause a bit on error
     if (result < 0)
@@ -49,7 +48,7 @@ int readData(void* buffer, int length)
   {
     if (!g_netConnected)
       return -1;
-      
+
     SceUID alarmId = sceKernelSetAlarm(NET_SOCKET_TIMEOUT, (SceKernelAlarmHandler)netSocketTimeoutAlarm, NULL);
     int result = sceNetInetRecv(g_netSocket, buffer, length, 0);
     sceKernelCancelAlarm(alarmId);
@@ -81,25 +80,23 @@ bool readDataLarge(void* buffer, int length)
   int len;
   unsigned char* charBuffer = buffer;
 
-  while (bufferPosition < length) 
+  while (bufferPosition < length)
   {
     bytesToRead = (length - bufferPosition);
     if (bytesToRead > 0)
     {
       len = readData(&charBuffer[bufferPosition], bytesToRead);
-//      DEBUG_PRINTF("bytesToRead = %d, len = %d\n", bytesToRead, len);
 
       if (len < 0)
       {
         // Reading error
-        DEBUG_PRINTF("## readDataLarge: reading error\n");
         return false;
       }
 
       bufferPosition += len;
     }
   }
-  
+
   return true;
 }
 
@@ -132,7 +129,7 @@ int writeData(void* buffer, int length)
       return -1;
 
     SceUID alarmId = sceKernelSetAlarm(NET_SOCKET_TIMEOUT, (SceKernelAlarmHandler)netSocketTimeoutAlarm, NULL);
-    int result = sceNetInetSend(g_netSocket, buffer, length, 0);     
+    int result = sceNetInetSend(g_netSocket, buffer, length, 0);
     sceKernelCancelAlarm(alarmId);
 
     if (result < 0)
@@ -159,9 +156,9 @@ bool readFrameInformation(comFrameHeader* frameHeader)
   memset(frameHeader, 0, sizeof(comFrameHeader));
   int len = readData(frameHeader, sizeof(comFrameHeader));
 
-  if (len == sizeof(comFrameHeader)) 
+  if (len == sizeof(comFrameHeader))
   {
-    if (frameHeader->magic == COM_HEADER_MAGIC) 
+    if (frameHeader->magic == COM_HEADER_MAGIC)
     {
       return true;
     }
@@ -262,8 +259,6 @@ bool sendResponse()
 
   bool result = false;
 
-//  DEBUG_PRINTF("writing response\n");
-
   l_response.response.magic = COM_HEADER_MAGIC;
   l_response.response.flags = (g_comUpdateSettings ? COM_FLAGS_CONTAINS_SETTINGS_DATA : 0);
   if (g_comForceScreenUpdate)
@@ -308,35 +303,27 @@ bool sendResponse()
 */
 void comLoop()
 {
-  DEBUG_PRINTF("comLoop: enter\n")
-
   comFrameHeader frameHeader;
   memset(&frameHeader, 0, sizeof(comFrameHeader));
 
   g_comRunning = true;
   g_comAudioWritePosition = 0;
 
-  while (g_comRunning) 
+  while (g_comRunning)
   {
-//    DEBUG_PRINTF("comLoop: readFrameInformation\n")
     // Wait for the PC to send the size of the next compressed frame.
     if (!readFrameInformation(&frameHeader))
     {
-//      DEBUG_PRINTF("readError %d\n", g_comRunning);
-
       // Break if connection lost in Wlan mode
       CHECK_WLAN_RESULT
     }
     else
     {
       // Frame information received
-//      DEBUG_PRINTF("comLoop: size=%d, flags=0x%02lX, settings size=%d\n", frameHeader.imageSize, (long)frameHeader.flags, frameHeader.settingsSize)
 
       // Disable power save mode
       if (g_comMode == COM_MODE_USB)
         powerEnablePowerSaveMode(false);
-
-//      DEBUG_PRINTF("comLoop: readframe starting\n")
 
       // Got data size, read in data.
       if (g_comAudioWritePosition >= g_audioCurrentBufferSize)
@@ -361,5 +348,4 @@ void comLoop()
 
     sceDisplayWaitVblankStart();
   }
-  DEBUG_PRINTF("comLoop: exit\n")
 }

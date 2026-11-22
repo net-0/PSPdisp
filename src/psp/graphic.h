@@ -16,13 +16,11 @@
 #include <string.h>
 #include <pspkernel.h>
 #include <pspdisplay.h>
-#include <pspdebug.h>
 #include <stdlib.h>
 #include <pspctrl.h>
 #include <pspgu.h>
 #include <pspgum.h>
 #include "common.h"
-#include "debug.h"
 #include "menu.h"
 #include "shared.h"
 

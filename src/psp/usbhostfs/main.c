@@ -11,7 +11,6 @@
  * $Id: main.c 2189 2007-02-24 12:16:44Z tyranid $
  */
 #include <pspkernel.h>
-#include <pspdebug.h>
 #include <pspkdebug.h>
 #include <pspsdk.h>
 #include <stdio.h>
