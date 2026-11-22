@@ -7,7 +7,7 @@
 # Gives the user at the computer (the active local session, with the uaccess tag) what the daemon needs, so it runs as the user.
 # Installed by `make install`, then plug the PSP again.
 
-# A PSP running the PSPdisp app in USB mode: the USBHostFS driver of PSPLink shows up as a Sony device, as type B (01c9, the default) or type C (01ca)
+# A PSP running the PSPdisp app in USB mode: the USB driver of the app shows up as a Sony device, as type B (01c9) or type C (01ca, the default)
 SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="054c", ATTR{idProduct}=="01c9", TAG+="uaccess"
 SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="054c", ATTR{idProduct}=="01ca", TAG+="uaccess"
 
