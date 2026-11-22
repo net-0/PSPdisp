@@ -70,6 +70,7 @@ const struct ConfigDescriptor pspdisp_usb_configuration_descriptor = {
 	.bmAttributes = 0b11000000, // Self-powered (with the bit USB reserves set)
 	.bMaxPower = 0,
 };
+// TODO: have dedicated interfaces for each thing: a Audio interface, a HID interface, a custom Display interface, etc...
 const struct InterfaceDescriptor pspdisp_usb_interface_descriptor = {
 	.bLength = sizeof(struct InterfaceDescriptor),
 	.bDescriptorType = 0x04, // Interface
@@ -80,6 +81,7 @@ const struct InterfaceDescriptor pspdisp_usb_interface_descriptor = {
 	.bInterfaceProtocol = 0xFF,
 	.iInterface = 1, // `pspdisp_usb_string_descriptor`
 };
+// TODO: we have to rework the string descriptors of the USB!!
 struct StringDescriptor pspdisp_usb_string_descriptor = {
 	.bLength = 8, // Its header, then "<>" and a null character in UTF-16
 	.bDescriptorType = 0x03, // String
@@ -345,6 +347,7 @@ bool pspdisp_usb_send(const void *data, u32 size) {
 	return true;
 }
 
+// TODO: remove this PSPlink handshake from the PSP and desktop; we don't need it
 /**
  * @brief Do the handshake of the desktop, which starts its connection.
  *
