@@ -10,6 +10,7 @@ KERNEL_CPPFLAGS := $(PSP_CPPFLAGS) -D_PSP_FW_VERSION=600
 KERNEL_LDLIBS   := -lpspdisplay_driver -lpspctrl_driver $(PSP_MODULE_LDLIBS)
 
 ALL += $(PSP_GAME_DIR)/kernel.prx
+PSP_APP_STUBS += $(KERNEL_SRC_DIR)/kernel.S
 
 # The object of the module, compiled apart from the link (see the one of the app)
 $(PSP_BIN_DIR)/kernel.o: $(KERNEL_SRC_DIR)/main.c | $(PSP_BIN_DIR) $(DEP_DIR)

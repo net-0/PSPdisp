@@ -13,6 +13,7 @@ USB_LDLIBS   := -lpspusbbus_driver $(PSP_MODULE_LDLIBS)
 USB_STUBS := $(PSP_BIN_DIR)/PSPdispUSB.S
 
 ALL += $(PSP_GAME_DIR)/usb.prx
+PSP_APP_STUBS += $(USB_STUBS)
 
 # The object of the module, compiled apart from the link (see the one of the app)
 $(PSP_BIN_DIR)/usb.o: $(USB_SRC_DIR)/usb.c | $(PSP_BIN_DIR) $(DEP_DIR)

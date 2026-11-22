@@ -16,7 +16,7 @@
 
 
 int l_currentUsbMode; // Currently used usb mode
-SceUID l_usbhostfsModuleId = 0; // ID of the usbhostfs prx
+SceUID l_usbModuleId = 0; // ID of the usb prx
 
 
 
@@ -35,7 +35,7 @@ void usbEnterLoop()
   {
     // Usb initializaton failed, draw error message and return to the main menu
     char errorMessage[256];
-    sprintf(errorMessage, "Could not start the USB driver\n(error 0x%08lX, code %d).\n\nPlease disable all USB related plugins and try again.", (long unsigned int)l_usbhostfsModuleId, handle);
+    sprintf(errorMessage, "Could not start the USB driver\n(error 0x%08lX, code %d).\n\nPlease disable all USB related plugins and try again.", (long unsigned int)l_usbModuleId, handle);
     msgShowError(errorMessage, false, false);
   }
   else
@@ -70,24 +70,21 @@ void usbEnterLoop()
 */
 int usbInit()
 {
-  if (l_usbhostfsModuleId == 0)
-    l_usbhostfsModuleId = utilsLoadStartModule("usbhostfs.prx");
+  if (l_usbModuleId == 0)
+    l_usbModuleId = utilsLoadStartModule("usb.prx");
 
-  if (l_usbhostfsModuleId < 0)
+  if (l_usbModuleId < 0)
     return -1;
 
   if (sceUsbStart(PSP_USBBUS_DRIVERNAME, 0, 0) != 0)
     return -2;
 
-  if (sceUsbStart(USB_HOSTFSDRIVER_NAME, 0, 0) != 0)
+  if (sceUsbStart(PSPDISP_USB_DRIVER_NAME, 0, 0) != 0)
     return -3;
 
-  l_currentUsbMode = (configUsbMode == 0) ? USB_HOSTFSDRIVER_PID_TYPE_B : USB_HOSTFSDRIVER_PID_TYPE_C;
-  if (sceUsbActivate(l_currentUsbMode) != 0) 
+  l_currentUsbMode = (configUsbMode == 0) ? PSPDISP_USB_PRODUCT_ID_TYPE_B : PSPDISP_USB_PRODUCT_ID_TYPE_C;
+  if (sceUsbActivate(l_currentUsbMode) != 0)
     return -4;
-
-  struct AsyncEndpoint endp;
-  usbAsyncRegister(4, &endp);
 
   return 0;
 }
@@ -103,17 +100,15 @@ int usbInit()
 */
 void usbTerm() 
 {
-  usbAsyncUnregister(4);
-
   sceUsbDeactivate(l_currentUsbMode);
-  sceUsbStop(USB_HOSTFSDRIVER_NAME, 0, 0);
+  sceUsbStop(PSPDISP_USB_DRIVER_NAME, 0, 0);
   sceUsbStop(PSP_USBBUS_DRIVERNAME, 0, 0);
 
-  int result = utilsStopUnloadModule(l_usbhostfsModuleId);
+  int result = utilsStopUnloadModule(l_usbModuleId);
 
   // Unloading is broken on 6.20 TN-C
   if (result != 0x80020136)
-    l_usbhostfsModuleId = 0;
+    l_usbModuleId = 0;
 }
 
 
