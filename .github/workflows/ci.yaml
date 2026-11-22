@@ -12,6 +12,4 @@ jobs:
     name: Build
     permissions:
       contents: read
-    needs:
-      - versioning
     uses: ./.github/workflows/build.yaml
