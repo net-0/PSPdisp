@@ -44,12 +44,12 @@ FORCE:
 
 ALL :=
 
-# The certificate that signs the driver packages (Windows), before the programs, as their packages use its variables in their prerequisites
+# The certificate that signs the driver packages (Windows), before them, as they use its variables in their prerequisites
 ifeq ($(PLATFORM),windows)
 include $(DESKTOP_SRC_DIR)/winsign.mk
 endif
 
-# The version of the driver packages (Windows), before the programs, as the one of the daemon (WinUSB) uses it
+# The version of the driver packages (Windows), before them, as they use it
 ifeq ($(PLATFORM),windows)
 include $(DESKTOP_SRC_DIR)/windriver.mk
 endif

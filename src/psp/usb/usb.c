@@ -13,12 +13,14 @@
  *
  * It's a function driver of the bus driver of the PSP (see `pspusbbus.h`), registered while the module is loaded, which sets up the device with the desktop from the descriptors of the driver.
  * The bus driver tells the driver when the desktop configured the device (attached), so the endpoints can transfer, and when it's detached (unplugged, or deactivated by the app).
+ * It passes on the requests it doesn't answer itself, of which the driver answers the ones of Windows for its Microsoft OS descriptors, so Windows gives it WinUSB without a driver to install.
  *
  * Once attached, the first read or write does the handshake of the desktop (see `pspdisp_usb_handshake()`), then the data goes through the endpoints as it is.
  * Each transfer goes through a buffer, as the USB hardware reads and writes the memory without the cache of the CPU.
  * A transfer waits until the desktop takes or sends the data, or until the driver is detached (which the app does to stop a transfer).
  */
 
+#include <stddef.h>
 #include <string.h>
 #include <pspkernel.h>
 #include <pspsdk.h>
@@ -33,6 +35,17 @@ PSP_MODULE_INFO("PSPdispUSB", PSP_MODULE_KERNEL, 1, 0);
 #define PSPDISP_USB_BULK_ENDPOINT_COUNT      2						  // The bulk endpoints, `PSPDISP_USB_ENDPOINT_IN` and `PSPDISP_USB_ENDPOINT_OUT`
 #define PSPDISP_USB_HIGH_SPEED_PACKET_SIZE   512					  // Biggest packet of a bulk endpoint at high speed (USB 2.0)
 #define PSPDISP_USB_FULL_SPEED_PACKET_SIZE   64						  // Biggest packet of a bulk endpoint at full speed (USB 1.1)
+
+#define PSPDISP_USB_REQUEST_GET_DESCRIPTOR             0x06       // Standard request of a descriptor (`bRequest`)
+#define PSPDISP_USB_REQUEST_TO_HOST_STANDARD_DEVICE    0b10000000 // `bmRequestType` of a standard request to the device, with data to the host
+#define PSPDISP_USB_REQUEST_TO_HOST_VENDOR_DEVICE      0b11000000 // `bmRequestType` of a vendor-specific request to the device, with data to the host
+#define PSPDISP_USB_REQUEST_TO_HOST_VENDOR_INTERFACE   0b11000001 // `bmRequestType` of a vendor-specific request to an interface, with data to the host
+#define PSPDISP_USB_MICROSOFT_OS_STRING_INDEX          0xEE       // String Windows asks for, to know if a device has Microsoft OS descriptors
+#define PSPDISP_USB_MICROSOFT_VENDOR_CODE              0x01       // Vendor-specific request Windows asks for the Microsoft OS feature descriptors with (`bRequest`), any one the driver doesn't use otherwise
+#define PSPDISP_USB_MICROSOFT_COMPATIBLE_ID_INDEX      0x0004     // Microsoft OS feature descriptor of the compatible IDs (`wIndex`)
+#define PSPDISP_USB_MICROSOFT_PROPERTIES_INDEX         0x0005     // Microsoft OS feature descriptor of the properties (`wIndex`)
+#define PSPDISP_USB_INTERFACE_GUID_NAME                u"DeviceInterfaceGUID"
+#define PSPDISP_USB_INTERFACE_GUID                     u"{21EFA200-DE10-44A9-BB86-AD29A2FD1E74}" // Device interface of the PSP, which WinUSB applications can find it by
 
 #define PSPDISP_USB_HANDSHAKE_MAGIC          0x782F0812 // Sent by the desktop to start the handshake, and first field of the hello (`HOSTFS_MAGIC` of USBHostFS)
 #define PSPDISP_USB_HELLO_COMMAND            0x8FFC0000 // Command of the hello (`HOSTFS_CMD_HELLO` of USBHostFS)
@@ -50,6 +63,49 @@ typedef struct {
 	u32 extra_size; // Size of the data following it, none
 } PSPdispUSBHello;
 
+/**
+ * @brief The Microsoft OS string (string `PSPDISP_USB_MICROSOFT_OS_STRING_INDEX`), which tells Windows the request to ask for the Microsoft OS feature descriptors with.
+ */
+typedef struct {
+	u8 length; // Of the descriptor
+	u8 type; // 0x03, a string
+	u16 signature[7]; // "MSFT100", in UTF-16
+	u8 vendor_code; // `PSPDISP_USB_MICROSOFT_VENDOR_CODE`
+	u8 padding;
+} __attribute__((packed)) PSPdispUSBMicrosoftOSString;
+
+/**
+ * @brief The Microsoft OS feature descriptor of the compatible IDs, which gives the interface the one of WinUSB, so Windows installs WinUSB for it.
+ */
+typedef struct {
+	u32 length; // Of the descriptor
+	u16 version; // 0x0100, 1.0
+	u16 index; // `PSPDISP_USB_MICROSOFT_COMPATIBLE_ID_INDEX`
+	u8 function_count; // The functions following the header, one
+	u8 reserved[7];
+	u8 first_interface; // Of the function
+	u8 reserved_one; // 0x01
+	char compatible_id[8]; // "WINUSB"
+	char sub_compatible_id[8];
+	u8 reserved_end[6];
+} __attribute__((packed)) PSPdispUSBMicrosoftCompatibleID;
+
+/**
+ * @brief The Microsoft OS feature descriptor of the properties, which gives the device its device interface (`PSPDISP_USB_INTERFACE_GUID`), as Windows writes it in the registry.
+ */
+typedef struct {
+	u32 length; // Of the descriptor
+	u16 version; // 0x0100, 1.0
+	u16 index; // `PSPDISP_USB_MICROSOFT_PROPERTIES_INDEX`
+	u16 property_count; // The properties following the header, one
+	u32 property_size; // Of the property, from here
+	u32 property_type; // 1, a string (REG_SZ)
+	u16 name_size; // In bytes
+	u16 name[sizeof(PSPDISP_USB_INTERFACE_GUID_NAME) / sizeof(u16)]; // In UTF-16, with its null character
+	u32 value_size; // In bytes
+	u16 value[sizeof(PSPDISP_USB_INTERFACE_GUID) / sizeof(u16)]; // In UTF-16, with its null character
+} __attribute__((packed)) PSPdispUSBMicrosoftProperties;
+
 // The descriptors of the device, the same at both speeds, but the size of the packets of the endpoints (see `pspdisp_usb_data_fill()`)
 const struct DeviceDescriptor pspdisp_usb_device_descriptor = {
 	.bLength = sizeof(struct DeviceDescriptor),
@@ -58,7 +114,7 @@ const struct DeviceDescriptor pspdisp_usb_device_descriptor = {
 	.bMaxPacketSize = 64, // Of the control endpoint
 	.idVendor = 0, // Sony, given by the bus driver
 	.idProduct = 0, // The one the app activates the driver with, given by the bus driver
-	.bcdDevice = 0x0100,
+	.bcdDevice = 0x0200, // Windows asks for the Microsoft OS descriptors once per vendor, product and release, so a release that changes them needs a new number
 	.bNumConfigurations = 1,
 };
 const struct ConfigDescriptor pspdisp_usb_configuration_descriptor = {
@@ -79,13 +135,46 @@ const struct InterfaceDescriptor pspdisp_usb_interface_descriptor = {
 	.bInterfaceClass = 0xFF, // Vendor-specific
 	.bInterfaceSubClass = 0x01,
 	.bInterfaceProtocol = 0xFF,
-	.iInterface = 1, // `pspdisp_usb_string_descriptor`
+	.iInterface = 1, // The first of `pspdisp_usb_string_descriptors`
 };
 // TODO: we have to rework the string descriptors of the USB!!
-struct StringDescriptor pspdisp_usb_string_descriptor = {
-	.bLength = 8, // Its header, then "<>" and a null character in UTF-16
-	.bDescriptorType = 0x03, // String
-	.bString = { '<', '>' },
+// The strings of the device, string 1 first, ending with an empty one, in case the bus driver reads them as a list
+struct StringDescriptor pspdisp_usb_string_descriptors[] = {
+	{
+		.bLength = 8, // Its header, then "<>" and a null character in UTF-16
+		.bDescriptorType = 0x03, // String
+		.bString = { '<', '>' },
+	},
+	{ .bLength = 0 },
+};
+
+// The Microsoft OS descriptors, which make Windows install WinUSB for the PSP, sent by `pspdisp_usb_answer()`, so they start a line of the cache
+const PSPdispUSBMicrosoftOSString pspdisp_usb_microsoft_os_string __attribute__((aligned(PSPDISP_USB_CACHE_LINE_SIZE))) = {
+	.length = sizeof(PSPdispUSBMicrosoftOSString),
+	.type = 0x03, // String
+	.signature = { 'M', 'S', 'F', 'T', '1', '0', '0' },
+	.vendor_code = PSPDISP_USB_MICROSOFT_VENDOR_CODE,
+};
+const PSPdispUSBMicrosoftCompatibleID pspdisp_usb_microsoft_compatible_id __attribute__((aligned(PSPDISP_USB_CACHE_LINE_SIZE))) = {
+	.length = sizeof(PSPdispUSBMicrosoftCompatibleID),
+	.version = 0x0100,
+	.index = PSPDISP_USB_MICROSOFT_COMPATIBLE_ID_INDEX,
+	.function_count = 1,
+	.first_interface = 0,
+	.reserved_one = 0x01,
+	.compatible_id = "WINUSB",
+};
+const PSPdispUSBMicrosoftProperties pspdisp_usb_microsoft_properties __attribute__((aligned(PSPDISP_USB_CACHE_LINE_SIZE))) = {
+	.length = sizeof(PSPdispUSBMicrosoftProperties),
+	.version = 0x0100,
+	.index = PSPDISP_USB_MICROSOFT_PROPERTIES_INDEX,
+	.property_count = 1,
+	.property_size = sizeof(PSPdispUSBMicrosoftProperties) - offsetof(PSPdispUSBMicrosoftProperties, property_size),
+	.property_type = 1,
+	.name_size = sizeof(PSPDISP_USB_INTERFACE_GUID_NAME),
+	.name = PSPDISP_USB_INTERFACE_GUID_NAME,
+	.value_size = sizeof(PSPDISP_USB_INTERFACE_GUID),
+	.value = PSPDISP_USB_INTERFACE_GUID,
 };
 
 // The descriptors laid out as the bus driver reads them, at high speed and at full speed, filled by `pspdisp_usb_data_fill()`
@@ -109,6 +198,7 @@ struct UsbInterface pspdisp_usb_interfaces = {
 SceUID pspdisp_usb_lock_id = -1; // Semaphore letting one read or write go at a time, while the driver is started
 SceUID pspdisp_usb_transfer_event_id = -1; // Event flag of the transfers (`PSPDISP_USB_TRANSFER_DONE_EVENT`), while the driver is started
 struct UsbdDeviceReq pspdisp_usb_transfer_request; // The transfer being done
+struct UsbdDeviceReq pspdisp_usb_answer_request; // The answer to a request of the desktop on the control endpoint
 u8 pspdisp_usb_buffer[PSPDISP_USB_BUFFER_SIZE] __attribute__((aligned(PSPDISP_USB_CACHE_LINE_SIZE))); // The data of the transfer, on whole lines of the cache, so dropping them from the cache drops nothing else
 volatile bool pspdisp_usb_attached = false; // If the desktop configured the device, so its endpoints can transfer
 volatile bool pspdisp_usb_connected = false; // If the handshake was done since the device was attached
@@ -144,13 +234,59 @@ void pspdisp_usb_data_fill(struct UsbData *data, u16 max_packet_size) {
 }
 
 /**
- * @brief Called by the bus driver for a request of the desktop on the control endpoint that it doesn't answer itself, which the driver ignores.
+ * @brief Called by the bus driver once an answer on the control endpoint is sent, nothing to do.
  *
- * @param request The request.
  * @return 0.
  */
-int pspdisp_usb_on_control_request(int, int, struct DeviceRequest *request) {
+int pspdisp_usb_on_answer_done(struct UsbdDeviceReq *, int, int) {
 	return 0;
+}
+
+/**
+ * @brief Answer a request of the desktop on the control endpoint, with as much of the data as it asked for.
+ *
+ * @param data The data, starting a line of the cache.
+ * @param size The size of the data.
+ * @param asked_size The size the desktop asked for.
+ * @return 0, or -1 if it failed.
+ */
+int pspdisp_usb_answer(const void *data, u32 size, u16 asked_size) {
+	sceKernelDcacheWritebackRange(data, size); // The USB hardware reads the memory, not the cache of the CPU
+
+	pspdisp_usb_answer_request = (struct UsbdDeviceReq) {
+		.endp = &pspdisp_usb_endpoints[0], // The control endpoint
+		.data = (void *) data,
+		.size = size < asked_size ? size : asked_size,
+		.func = pspdisp_usb_on_answer_done,
+	};
+	return sceUsbbdReqSend(&pspdisp_usb_answer_request) < 0 ? -1 : 0;
+}
+
+/**
+ * @brief Called by the bus driver for a request of the desktop on the control endpoint that it doesn't answer itself.
+ *
+ * The driver answers the requests of Windows for its Microsoft OS descriptors, and refuses the others.
+ *
+ * @param status Negative when the request can't be answered (what else it tells isn't known).
+ * @param request The request.
+ * @return 0 if the request is answered, or -1 if it's refused.
+ */
+int pspdisp_usb_on_control_request(int, int status, struct DeviceRequest *request) {
+	if (status < 0) return -1;
+
+	// The Microsoft OS string, a standard request of a string descriptor (its type, then its index)
+	const u16 microsoft_os_string = 0x03 << 8 | PSPDISP_USB_MICROSOFT_OS_STRING_INDEX;
+	if (request->bmRequestType == PSPDISP_USB_REQUEST_TO_HOST_STANDARD_DEVICE && request->bRequest == PSPDISP_USB_REQUEST_GET_DESCRIPTOR && request->wValue == microsoft_os_string)
+		return pspdisp_usb_answer(&pspdisp_usb_microsoft_os_string, sizeof(pspdisp_usb_microsoft_os_string), request->wLength);
+
+	// The Microsoft OS feature descriptors, asked for with the vendor code, to the device (or to the interface for the properties, depending on the version of Windows)
+	const bool microsoft_feature = (request->bmRequestType == PSPDISP_USB_REQUEST_TO_HOST_VENDOR_DEVICE || request->bmRequestType == PSPDISP_USB_REQUEST_TO_HOST_VENDOR_INTERFACE) && request->bRequest == PSPDISP_USB_MICROSOFT_VENDOR_CODE;
+	if (microsoft_feature && request->wIndex == PSPDISP_USB_MICROSOFT_COMPATIBLE_ID_INDEX)
+		return pspdisp_usb_answer(&pspdisp_usb_microsoft_compatible_id, sizeof(pspdisp_usb_microsoft_compatible_id), request->wLength);
+	if (microsoft_feature && request->wIndex == PSPDISP_USB_MICROSOFT_PROPERTIES_INDEX)
+		return pspdisp_usb_answer(&pspdisp_usb_microsoft_properties, sizeof(pspdisp_usb_microsoft_properties), request->wLength);
+
+	return -1;
 }
 
 /**
@@ -227,7 +363,7 @@ struct UsbDriver pspdisp_usb_driver = {
 	.confp_hi = &pspdisp_usb_high_speed_data.config,
 	.devp = pspdisp_usb_full_speed_data.devdesc,
 	.confp = &pspdisp_usb_full_speed_data.config,
-	.str = &pspdisp_usb_string_descriptor,
+	.str = pspdisp_usb_string_descriptors,
 	.recvctl = pspdisp_usb_on_control_request,
 	.func28 = pspdisp_usb_on_unknown,
 	.attach = pspdisp_usb_on_attach,

@@ -1,5 +1,5 @@
 # This file uses the INNO_* prefix, as it's included by the Makefile of the desktop (on Windows only), which gives it BIN_DIR, VERSION, EXE, CFLAGS and the files it packages:
-# the programs, with the icon of the app (UI_SRC_DIR), the driver packages (IDDCX_DIR, VHID_DIR, WINUSB_DIR, and WINDRIVER_VERSION), the certificate (WINSIGN_DIR) and the icon of the installer (WINICON_DIR)
+# the programs, with the icon of the app (UI_SRC_DIR), the driver packages (IDDCX_DIR, VHID_DIR, and WINDRIVER_VERSION), the certificate (WINSIGN_DIR) and the icon of the installer (WINICON_DIR)
 #
 # The installer of PSPdisp for Windows, made by Inno Setup from a folder staged here, as it's installed:
 # - bin: the programs, with the programs of GLib, and the DLLs of MSYS2 they all and the SVG loader need (as `ldd` lists them)
@@ -58,7 +58,7 @@ $(INNO_DIR)/pspdisp-driver$(EXE): $(INNO_SRC_DIR)/driver.c | $(INNO_DIR)
 # The folder the installer is made from, staged again from scratch when what it has changes, as it's installed (see the top of this file)
 # A folder's date doesn't tell when its files changed, so its target is a file touched once it's all staged (not when MSYS2 updates its DLLs, `touch` a program then)
 $(INNO_STAGE): $(BIN_DIR)/pspdisp-ui$(EXE) $(BIN_DIR)/pspdisp-daemon$(EXE) $(UI_SRC_DIR)/com.pspdisp.ui.svg $(INNO_DIR)/pspdisp-driver$(EXE) \
-		$(IDDCX_DIR)/pspdisp-iddcx.cat $(VHID_DIR)/pspdisp-vhid.cat $(WINUSB_DIR)/pspdisp-winusb.cat $(WINSIGN_DIR)/pspdisp-winsign.cer $(WINICON_DIR)/com.pspdisp.ui.ico \
+		$(IDDCX_DIR)/pspdisp-iddcx.cat $(VHID_DIR)/pspdisp-vhid.cat $(WINSIGN_DIR)/pspdisp-winsign.cer $(WINICON_DIR)/com.pspdisp.ui.ico \
 		$(INNO_SRC_DIR)/inno.mk | $(INNO_DIR)
 	rm -rf $(INNO_STAGE_DIR)
 	mkdir -p $(INNO_STAGE_DIR)/bin $(INNO_STAGE_DIR)/drivers $(INNO_STAGE_DIR)/share/glib-2.0/schemas $(INNO_STAGE_DIR)/share/icons/hicolor/scalable/apps $(INNO_STAGE_DIR)/$(INNO_PIXBUF_DIR)/loaders
@@ -73,7 +73,7 @@ $(INNO_STAGE): $(BIN_DIR)/pspdisp-ui$(EXE) $(BIN_DIR)/pspdisp-daemon$(EXE) $(UI_
 	cp $(INNO_PREFIX)/share/icons/hicolor/index.theme $(INNO_STAGE_DIR)/share/icons/hicolor/
 	cp $(UI_SRC_DIR)/com.pspdisp.ui.svg $(INNO_STAGE_DIR)/share/icons/hicolor/scalable/apps/
 	gtk4-update-icon-cache -q -f -t $(INNO_STAGE_DIR)/share/icons/hicolor
-	cp -r $(IDDCX_DIR) $(VHID_DIR) $(WINUSB_DIR) $(INNO_STAGE_DIR)/drivers/
+	cp -r $(IDDCX_DIR) $(VHID_DIR) $(INNO_STAGE_DIR)/drivers/
 	cp $(INNO_DIR)/pspdisp-driver$(EXE) $(INNO_STAGE_DIR)/drivers/
 	cp $(WINSIGN_DIR)/pspdisp-winsign.cer $(WINICON_DIR)/com.pspdisp.ui.ico $(DESKTOP_SRC_DIR)/../../LICENSE $(INNO_STAGE_DIR)/
 	touch $@

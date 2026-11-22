@@ -9,13 +9,12 @@
 /*
  * Installs and removes the driver packages of PSPdisp (Windows), for the installer (see pspdisp.iss), as an administrator:
  *
- *   pspdisp-driver install <INF> [<hardware ID>]
- *   pspdisp-driver uninstall <INF name> [<hardware ID>]
+ *   pspdisp-driver install <INF> <hardware ID>
+ *   pspdisp-driver uninstall <INF name> <hardware ID>
  *
- * With a hardware ID, the driver is for a root device, which no bus enumerates (the IddCx display and the virtual gamepad):
+ * Each driver is for a root device, which no bus enumerates (the IddCx display and the virtual gamepad), known by its hardware ID:
  * "install" creates the device when there's none (as `devcon install` does, which the WDK doesn't let us ship), then installs the driver on it,
- * and "uninstall" removes the device. Without one, the driver is for a real device (the WinUSB driver of the PSP): "install" adds it to the driver store,
- * and installs it on the devices plugged that it matches (as `pnputil /add-driver /install`).
+ * and "uninstall" removes the device.
  *
  * "uninstall" also deletes every package of that INF from the driver store (an INF is renamed oem<N>.inf there, so it's found by its original name).
  *
@@ -162,10 +161,10 @@ bool pspdisp_driver_create_root_device(const wchar_t *inf, const wchar_t *hardwa
 }
 
 /**
- * @brief Install a driver package: on its root device (created when there's none) with a hardware ID, otherwise on the devices plugged that it matches.
+ * @brief Install a driver package on its root device, created when there's none.
  *
  * @param inf The path of the INF.
- * @param hardware_id The hardware ID of its root device, or `NULL` for a driver of real devices.
+ * @param hardware_id The hardware ID of its root device.
  * @param reboot Set to `TRUE` when Windows has to restart.
  * @return `true` if it was installed.
  */
@@ -176,22 +175,7 @@ bool pspdisp_driver_install(const wchar_t *inf, const wchar_t *hardware_id, BOOL
 		return false;
 	}
 
-	// A driver of real devices: in the driver store, and on the devices plugged, even if it doesn't match them better than their driver (e.g. another WinUSB driver of the PSP)
-	// (`DiInstallDriverW()` isn't in the import library of MinGW, so it's taken from newdev.dll, which has it since Windows Vista)
-	if (hardware_id == NULL) {
-		BOOL (WINAPI *install_driver)(HWND, const wchar_t *, DWORD, BOOL *) = (BOOL (WINAPI *)(HWND, const wchar_t *, DWORD, BOOL *)) (void *) GetProcAddress(LoadLibraryW(L"newdev.dll"), "DiInstallDriverW");
-		if (install_driver == NULL) {
-			pspdisp_driver_print_error(L"Failed to find DiInstallDriverW() in newdev.dll", GetLastError());
-			return false;
-		}
-		if (!install_driver(NULL, path, DIIRFLAG_FORCE_INF, reboot)) {
-			pspdisp_driver_print_error(L"Failed to install the driver", GetLastError());
-			return false;
-		}
-		return true;
-	}
-
-	// A driver of a root device: its device first, once (the next installs update its driver)
+	// Its device first, once (the next installs update its driver)
 	int count = 0;
 	pspdisp_driver_for_each_device(hardware_id, NULL, &count, reboot);
 	if (count == 0 && !pspdisp_driver_create_root_device(path, hardware_id)) return false;
@@ -205,17 +189,15 @@ bool pspdisp_driver_install(const wchar_t *inf, const wchar_t *hardware_id, BOOL
 }
 
 /**
- * @brief Remove a driver package: its root device with a hardware ID, then its packages from the driver store.
+ * @brief Remove a driver package: its root device, then its packages from the driver store.
  *
  * @param inf_name The name of the INF, as built (e.g. pspdisp-iddcx.inf), which the driver store keeps as its original name.
- * @param hardware_id The hardware ID of its root device, or `NULL` for a driver of real devices.
+ * @param hardware_id The hardware ID of its root device.
  * @param reboot Set to `TRUE` when Windows has to restart.
  * @return `true` if it was removed (or wasn't installed).
  */
 bool pspdisp_driver_uninstall(const wchar_t *inf_name, const wchar_t *hardware_id, BOOL *reboot) {
-	bool succeeded = true;
-	if (hardware_id != NULL && !pspdisp_driver_for_each_device(hardware_id, pspdisp_driver_remove_device, NULL, reboot))
-		succeeded = false;
+	bool succeeded = pspdisp_driver_for_each_device(hardware_id, pspdisp_driver_remove_device, NULL, reboot);
 
 	// The packages in the driver store are the oem<N>.inf of the INF folder of Windows
 	wchar_t folder[MAX_PATH], pattern[MAX_PATH];
@@ -241,7 +223,7 @@ bool pspdisp_driver_uninstall(const wchar_t *inf_name, const wchar_t *hardware_i
 			&& _wcsicmp(original.OriginalInfName, inf_name) == 0;
 		free(information);
 
-		// Deleted even if a device still uses it (e.g. a PSP plugged with the WinUSB driver)
+		// Deleted even if a device still uses it (e.g. its root device couldn't be removed)
 		if (ours && !SetupUninstallOEMInfW(found.cFileName, SUOI_FORCEDELETE, NULL)) {
 			pspdisp_driver_print_error(L"Failed to delete the driver from the driver store", GetLastError());
 			succeeded = false;
@@ -260,16 +242,15 @@ bool pspdisp_driver_uninstall(const wchar_t *inf_name, const wchar_t *hardware_i
  * @return 0 if it succeeded, 1 if it failed, or 3010 when Windows has to restart to finish.
  */
 int wmain(int argc, wchar_t **argv) {
-	if (argc < 3 || argc > 4 || (wcscmp(argv[1], L"install") != 0 && wcscmp(argv[1], L"uninstall") != 0)) {
-		wprintf(L"Usage: pspdisp-driver install <INF> [<hardware ID>]\n       pspdisp-driver uninstall <INF name> [<hardware ID>]\n");
+	if (argc != 4 || (wcscmp(argv[1], L"install") != 0 && wcscmp(argv[1], L"uninstall") != 0)) {
+		wprintf(L"Usage: pspdisp-driver install <INF> <hardware ID>\n       pspdisp-driver uninstall <INF name> <hardware ID>\n");
 		return PSPDISP_DRIVER_EXIT_FAILED;
 	}
 
-	const wchar_t *hardware_id = argc == 4 ? argv[3] : NULL;
 	BOOL reboot = FALSE;
 	bool succeeded = wcscmp(argv[1], L"install") == 0
-		? pspdisp_driver_install(argv[2], hardware_id, &reboot)
-		: pspdisp_driver_uninstall(argv[2], hardware_id, &reboot);
+		? pspdisp_driver_install(argv[2], argv[3], &reboot)
+		: pspdisp_driver_uninstall(argv[2], argv[3], &reboot);
 
 	if (!succeeded) return PSPDISP_DRIVER_EXIT_FAILED;
 	return reboot ? ERROR_SUCCESS_REBOOT_REQUIRED : 0;

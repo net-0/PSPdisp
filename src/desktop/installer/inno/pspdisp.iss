@@ -7,7 +7,7 @@
 ; Compiled by `make` (see inno.mk), from the folder it stages (StageDir), with:
 ; - bin: the programs, with the DLLs of MSYS2 they need (GTK, GLib, ...), as GTK finds its data from the folder above (lib and share)
 ; - lib, share: the data of GTK (the GSettings schemas, the icons, and the SVG loader of gdk-pixbuf)
-; - drivers: the driver packages (the virtual display, the virtual gamepad and the WinUSB driver of the PSP), and pspdisp-driver.exe that installs them (see driver.c)
+; - drivers: the driver packages (the virtual display and the virtual gamepad), and pspdisp-driver.exe that installs them (see driver.c)
 ; - pspdisp-winsign.cer: the self-signed certificate of the driver packages, trusted by the installer, so Windows installs them
 ; - LICENSE, com.pspdisp.ui.ico
 ;
@@ -70,7 +70,6 @@ Name: "custom"; Description: "Custom installation"; Flags: iscustom
 Name: "main"; Description: "PSPdisp (the desktop app and the daemon)"; Types: full custom; Flags: fixed
 Name: "display"; Description: "Virtual display (IddCx driver), the display the PSP shows"; Types: full
 Name: "gamepad"; Description: "Virtual gamepad (a DualShock 4), driven by the PSP buttons"; Types: full
-Name: "winusb"; Description: "WinUSB driver of the PSP, for the USB mode of the PSP app (type B or C)"; Types: full
 
 [Tasks]
 Name: "autostart"; Description: "Start PSPdisp when I sign in, so it waits for the PSP"
@@ -168,18 +167,16 @@ begin
     DriverErrors := DriverErrors + 'The certificate of the drivers wasn''t trusted:' + #13#10 + Output + #13#10;
 end;
 
-// Install or remove a driver package with pspdisp-driver.exe (see driver.c), noting what failed and if Windows has to restart
+// Install or remove a driver package with pspdisp-driver.exe (see driver.c), with the hardware ID of its root device, noting what failed and if Windows has to restart
 procedure Driver(const Action, Name, HardwareId: String);
 var
   Params, Output: String;
   Code: Integer;
 begin
   if Action = 'install' then
-    Params := 'install "' + ExpandConstant('{app}\drivers\' + Name + '\pspdisp-' + Name + '.inf') + '"'
+    Params := 'install "' + ExpandConstant('{app}\drivers\' + Name + '\pspdisp-' + Name + '.inf') + '" ' + HardwareId
   else
-    Params := 'uninstall pspdisp-' + Name + '.inf';
-  if HardwareId <> '' then
-    Params := Params + ' ' + HardwareId;
+    Params := 'uninstall pspdisp-' + Name + '.inf ' + HardwareId;
 
   Code := RunHidden(ExpandConstant('{app}\drivers\pspdisp-driver.exe'), Params, Output);
   if Code = 3010 then
@@ -245,7 +242,6 @@ begin
   begin
     DriverOfComponent('display', 'iddcx', 'Root\PSPdispIddCx');
     DriverOfComponent('gamepad', 'vhid', 'Root\PSPdispVhid');
-    DriverOfComponent('winusb', 'winusb', '');
   end;
 
   if WizardIsTaskSelected('firewall') then
@@ -270,7 +266,6 @@ begin
   StopPrograms;
   Driver('uninstall', 'iddcx', 'Root\PSPdispIddCx');
   Driver('uninstall', 'vhid', 'Root\PSPdispVhid');
-  Driver('uninstall', 'winusb', '');
   RemoveCertificates;
   RunHidden(ExpandConstant('{sys}\netsh.exe'), 'advfirewall firewall delete rule name="PSPdisp"', Output);
 

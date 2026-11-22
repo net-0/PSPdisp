@@ -1,6 +1,6 @@
 # This file uses the WINSIGN_* prefix, as it's included by the Makefile of the desktop (on Windows only), which gives it BIN_DIR
 #
-# The self-signed code signing certificate of the desktop (Windows), that signs its driver packages (e.g. the catalog of the WinUSB one, see daemon/winusb.mk), for the users to trust.
+# The self-signed code signing certificate of the desktop (Windows), that signs its driver packages (e.g. the catalog of the IddCx one, see display/connector/iddcx/iddcx.mk), for the users to trust.
 # The files that sign with it are included after this one, so they have WINSIGN_DIR for their prerequisites.
 
 # The folder of the certificate
