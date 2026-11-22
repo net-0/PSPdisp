@@ -21,7 +21,7 @@
  * Every wait and every transfer can be aborted with a `GCancellable`, e.g. to quit at once.
  *
  * On Linux, the udev rule `daemon/60-pspdisp.rules` gives the PSP to the user.
- * On Windows, the PSP needs the WinUSB driver, installed with `daemon/pspdisp-winusb.inf` (or Zadig), as type B or C.
+ * On Windows, the PSP gets the WinUSB driver from its Microsoft OS descriptors, unless another driver was installed for it (e.g. the one of PSPLink, or of PSPdisp 0.6).
  */
 
 #pragma once
@@ -49,7 +49,7 @@
 
 // What gives the program access to a PSP it can't open
 #if defined(_WIN32)
-	#define PSPDISP_USB_ACCESS_HINT "install the WinUSB driver for the PSP (daemon/pspdisp-winusb.inf, or Zadig)"
+	#define PSPDISP_USB_ACCESS_HINT "replace the driver of the PSP with WinUSB (e.g. with Zadig), then plug it again"
 #else
 	#define PSPDISP_USB_ACCESS_HINT "install the udev rule (sudo make install) then plug the PSP again"
 #endif
