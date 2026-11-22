@@ -28,7 +28,6 @@
 #include <arpa/inet.h>
 
 #include "common.h"
-#include "debug.h"
 #include "config.h"
 #include "graphic.h"
 

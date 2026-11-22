@@ -15,7 +15,6 @@
 #include <pspsdk.h>
 #include <pspthreadman.h>
 #include "common.h"
-#include "debug.h"
 #include "wlan.h"
 #include "usbhostfs/usbasync.h"
 #include "audio.h"

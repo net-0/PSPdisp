@@ -14,7 +14,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "debug.h"
 #include "shared.h"
 
 char configIpAddresses[5][36]; // individual entries must be 4 byte aligned

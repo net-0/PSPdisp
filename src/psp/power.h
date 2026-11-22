@@ -17,7 +17,6 @@
 #include <psppower.h>
 
 #include "common.h"
-#include "debug.h"
 #include "kernel/kernel.h"
 
 

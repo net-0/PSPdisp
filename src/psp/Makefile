@@ -3,7 +3,6 @@
 # The PSP app, built by the PSP toolchain (https://github.com/pspdev/pspdev), the way PSPSDK's build.mak does, in BIN_DIR/psp:
 # - the app (EBOOT.PBP), and the kernel modules it loads from its folder (kernel.prx and usbhostfs.prx), in PSP/GAME/PSPdisp, as they're copied on the memory stick
 # - the .zip of that PSP folder, to extract at the root of the memory stick, if zip is installed (otherwise it's skipped, with a note)
-# - sio.prx, the kernel module of the debug output on the serial port of the PSP, only loaded when the app is built for it (see debug.h)
 #
 # Each program (the app and each kernel module) is compiled from its main.c, which includes its other .c files, then linked into an ELF, which psp-prxgen converts into a PRX
 
@@ -55,7 +54,6 @@ $(PSP_BIN_DIR) $(PSP_GAME_DIR):
 # The kernel modules, before the app, as it links their stubs (their *_SRC_DIR)
 include $(PSP_SRC_DIR)/kernel/Makefile
 include $(PSP_SRC_DIR)/usbhostfs/Makefile
-include $(PSP_SRC_DIR)/sio/Makefile
 
 # Flags for the app:
 # - _PSP_FW_VERSION, the firmware the headers of PSPSDK target, 3.71 as the old app
@@ -65,10 +63,10 @@ PSP_APP_CPPFLAGS := $(PSP_CPPFLAGS) -D_PSP_FW_VERSION=371 -DPSPDISP_VERSION='"$(
 PSP_APP_LDFLAGS  := $(PSP_LDFLAGS) -specs=$(PSPSDK)/lib/prxspecs
 # The libraries
 PSP_APP_LDLIBS   := -lpspaudio -lpng -lz -lintrafont -lpspusb -lpspgum -lpspgu -lm -lpsppower -lpspjpeg -lpsputility -lpspkubridge -lpsprtc -ljpeg \
-	-lpspdebug -lpspdisplay -lpspge -lpspctrl -lpspnet -lpspnet_apctl
+	-lpspdisplay -lpspge -lpspctrl -lpspnet -lpspnet_apctl
 
 # The stubs of the functions the app calls in the kernel modules, which the system links once the app loads them
-PSP_APP_STUBS := $(KERNEL_SRC_DIR)/kernel.S $(USBHOSTFS_SRC_DIR)/USBHostFS.S $(SIO_SRC_DIR)/sio.S
+PSP_APP_STUBS := $(KERNEL_SRC_DIR)/kernel.S $(USBHOSTFS_SRC_DIR)/USBHostFS.S
 
 ALL += $(PSP_GAME_DIR)/EBOOT.PBP
 

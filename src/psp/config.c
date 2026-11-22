@@ -36,11 +36,11 @@ void configLoadInteger(FILE* file, char* name, int* value, int defaultValue, int
     strcpy(scanName, name);
     strcat(scanName, " %d ");
 
-    while (!found) 
+    while (!found)
     {
       if (fgets(buffer, 255, file) != NULL)
       {
-        if (strlen(buffer) < 3) 
+        if (strlen(buffer) < 3)
           continue;
 
         found = sscanf(buffer, scanName, &foundValue);
@@ -48,15 +48,13 @@ void configLoadInteger(FILE* file, char* name, int* value, int defaultValue, int
       else
         break;
     }
-    
-    if (found) 
+
+    if (found)
     {
       if ((foundValue >= minValue) && (foundValue <= maxValue))
         *value = foundValue;
     }
   }
-
-  DEBUG_PRINTF("configLoadInteger: name=%s, value=%d, defaultValue=%d, minValue=%d, maxValue=%d\n", name, *value, defaultValue, minValue, maxValue)
 }
 
 
@@ -84,11 +82,11 @@ void configLoadString(FILE* file, char* name, char* value, char* defaultValue, i
     strcpy(scanName, name);
     strcat(scanName, " \"%s\" ");
 
-    while (!found) 
+    while (!found)
     {
       if (fgets(buffer, 255, file) != NULL)
       {
-        if (strlen(buffer) < 3) 
+        if (strlen(buffer) < 3)
           continue;
 
         found = sscanf(buffer, scanName, &foundValue);
@@ -96,8 +94,8 @@ void configLoadString(FILE* file, char* name, char* value, char* defaultValue, i
       else
         break;
     }
-    
-    if (found) 
+
+    if (found)
     {
       if ((strlen(foundValue) >= minLength) && (strlen(foundValue) <= maxLength + 1))
       {
@@ -107,8 +105,6 @@ void configLoadString(FILE* file, char* name, char* value, char* defaultValue, i
       }
     }
   }
-  
-  DEBUG_PRINTF("configLoadInteger: name=%s, value=%s, defaultValue=%s, minLength=%d, maxLength=%d\n", name, value, defaultValue, minLength, maxLength)
 }
 
 
@@ -126,8 +122,6 @@ void configLoadConfiguration()
 {
   FILE *file;
   file = fopen(CONFIG_NAME, "rt");
-
-  DEBUG_PRINTF("configLoadConfiguration: fileFound=%d", (file != NULL))
 
   configLoadInteger(file, "usbSaveTimeout", &configUsbSaveTimeout, 5, 2, 3600);
   configLoadInteger(file, "usbSave", &configUsbSave, 1, 0, 1);
@@ -170,7 +164,7 @@ void configLoadConfiguration()
   configLoadInteger(file, "timeFormat", &configTimeFormat, 0, 0, 2);
   configLoadInteger(file, "verboseBattery", &configVerboseBattery, 1, 0, 1);
   configLoadInteger(file, "transparentMenu", &configTransparentMenu, 1, 0, 1);
-  
+
   if (file != NULL)
     fclose(file);
 }
@@ -214,8 +208,6 @@ void configSaveConfiguration()
 {
   FILE *file;
   file = fopen(CONFIG_NAME, "wt");
-
-  DEBUG_PRINTF("configSaveConfiguration: fileOpened=%d", (file != NULL))
 
   configSaveInteger(file, "usbSaveTimeout", &configUsbSaveTimeout);
   configSaveInteger(file, "usbSave", &configUsbSave);

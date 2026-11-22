@@ -16,7 +16,6 @@
 #include <pspimpose_driver.h>
 
 #include "common.h"
-#include "debug.h"
 #include "utils.h"
 #include "library/danzeff.h"
 #include "config.h"
@@ -34,7 +33,6 @@
 #include "com.c"
 #include "compress.c"
 #include "config.c"
-#include "debug.c"
 #include "graphic.c"
 #include "menu.c"
 #include "msgdlg.c"
@@ -52,7 +50,7 @@ bool g_menuThreadRunning = false;
 
 SceUID l_menuThreadId;
 
-PSP_MODULE_INFO("pspdisp", 0, 1, 1); 
+PSP_MODULE_INFO("pspdisp", 0, 1, 1);
 PSP_HEAP_SIZE_KB(18000);
 
 
@@ -156,9 +154,8 @@ SceUID setupCallbacks(void)
 */
 int enterComLoop(int mode)
 {
-  DEBUG_PRINTF("Entering main com loop\n");
   g_comMode = mode;
-  
+
   // Start the menu thread
   sceKernelStartThread(l_menuThreadId, 0, NULL);
 
@@ -175,7 +172,7 @@ int enterComLoop(int mode)
   if (g_comMode == COM_MODE_USB)
   {
     // USB mode
-    usbEnterLoop();  
+    usbEnterLoop();
   }
   else
   {
@@ -198,7 +195,6 @@ int enterComLoop(int mode)
   // Shutdown the audio functions
   audioTerm();
 
-  DEBUG_PRINTF("going back to the main menu\n");
   return MAIN_STATE_MENU;
 }
 
@@ -215,8 +211,6 @@ int enterComLoop(int mode)
 */
 void menuThread(SceSize args, void *argp)
 {
-  DEBUG_PRINTF("menuThread entered\n");
-
   SceCtrlData ctrlData;
   int oldButtons = 0;
 
@@ -225,19 +219,14 @@ void menuThread(SceSize args, void *argp)
 
   while (g_menuThreadRunning)
   {
-    if (utilsCtrlReadBufferPositive(&ctrlData, 1) != 1)
-      DEBUG_PRINTF("menuThread: utilsCtrlReadBufferPositive error\n");
+    utilsCtrlReadBufferPositive(&ctrlData, 1);
 
     if (!g_msgActive && (ctrlData.Buttons & PSP_CTRL_HOME) && !(oldButtons & PSP_CTRL_HOME))
     {
-      DEBUG_PRINTF("menuThread: Opening menu, buttons = 0x%08lX, last buttons = 0x%08lX\n", (long)ctrlData.Buttons, (long)oldButtons);
-      
       powerEnablePowerSaveMode(false);
-      
+
       g_menuActive = true;
-      DEBUG_PRINTF("menuThread: to menuLoop\n");
       int result = menuLoop(MENU_INGAME);
-      DEBUG_PRINTF("menuThread: from menuLoop\n");
       if (result == MENU_QUIT)
       {
         g_comRunning = false;
@@ -250,16 +239,14 @@ void menuThread(SceSize args, void *argp)
           // Probably the usb cable is still plugged in and blocking, just kill the usb connection
           if ((g_comMode == COM_MODE_USB) && (i == 20))
           {
-            DEBUG_PRINTF("menuThread: now force deactivating USB\n");
             usbDeactivate();
-            DEBUG_PRINTF("menuThread: USB deactivated\n");
           }
         }
       }
       else
       {
         usbDrawWaitingForDataMessage(false, false, true);
-        
+
         // Read in buttons, so that already pressed buttons can be
         // ignored for remote controlling
         sceCtrlReadBufferPositive(&ctrlData, 1);
@@ -297,9 +284,6 @@ int main(int argc, char *argv[])
   // Disable the HOME exit screen, only effective if the exit callback is registered
   sceImposeSetHomePopup(0);
 
-  // Initialize SIO debugging if DEBUG is set
-  DEBUG_INIT
-
   // Init controls
   sceCtrlSetSamplingCycle(0);
   sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
@@ -307,7 +291,7 @@ int main(int argc, char *argv[])
   // Enable some graphic stuff
   graphicInit();
   graphicInitFontLibrary();
-  
+
   // Check if this is running on 1.5 kernel
   utilsCheckFirmwareVersion();
 
@@ -326,7 +310,7 @@ int main(int argc, char *argv[])
   // Initialize the danzeff keyboard
   oskInitDanzeff();
 
-  l_menuThreadId = sceKernelCreateThread("menuThread", (SceKernelThreadEntry)menuThread, 0x18, 0x10000, PSP_THREAD_ATTR_USER, 0);    
+  l_menuThreadId = sceKernelCreateThread("menuThread", (SceKernelThreadEntry)menuThread, 0x18, 0x10000, PSP_THREAD_ATTR_USER, 0);
 
   // Set misc variables
   g_msgActive = g_oskActive = g_netDialogActive = false;
@@ -336,15 +320,12 @@ int main(int argc, char *argv[])
   int mainState = MAIN_STATE_MENU;
   bool mainLoopRunning = true;
 
-  DEBUG_PRINTF("Entering main loop\n");
-
   // Show autostart screen if necessary
   if (configAutoMode != 0)
     mainState = menuDrawAutostartScreen();
 
   while (mainLoopRunning)
   {
-    DEBUG_PRINTF("mainloop\n")
     switch (mainState)
     {
       case MAIN_STATE_MENU:
