@@ -19,8 +19,8 @@ $(PSP_BIN_DIR)/kernel.o: $(KERNEL_SRC_DIR)/main.c | $(PSP_BIN_DIR) $(DEP_DIR)
 $(PSP_BIN_DIR)/kernel-exports.c: $(KERNEL_SRC_DIR)/exports.exp | $(PSP_BIN_DIR)
 	psp-build-exports -b $< > $@
 
-# The ELF of the module, with the stub of the syscon driver it calls, its imports fixed
-$(PSP_BIN_DIR)/kernel.elf: $(PSP_BIN_DIR)/kernel.o $(PSP_BIN_DIR)/kernel-exports.c $(KERNEL_SRC_DIR)/syscon.S
+# The ELF of the module, its imports fixed
+$(PSP_BIN_DIR)/kernel.elf: $(PSP_BIN_DIR)/kernel.o $(PSP_BIN_DIR)/kernel-exports.c
 	psp-gcc $(KERNEL_CPPFLAGS) $(PSP_CFLAGS) $(PSP_MODULE_LDFLAGS) $^ -o $@ $(KERNEL_LDLIBS)
 	psp-fixup-imports $@
 
