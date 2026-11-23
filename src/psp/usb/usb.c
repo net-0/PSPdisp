@@ -8,14 +8,14 @@
 
 /*
  * The USB driver of the app, the USB device the desktop talks to, with two bulk endpoints: one from the desktop (0x02) and one to it (0x81).
- * Its product IDs, bulk endpoints and handshake are the ones of USBHostFS of PSPLink, which the desktop expects.
+ * Its product IDs and bulk endpoints are the ones of USBHostFS of PSPLink, which the desktop expects.
  * It's the kernel module `usb.prx`, which the app loads from its folder, and which exports the functions the app calls (see `exports.exp` and `usb.h`).
  *
  * It's a function driver of the bus driver of the PSP (see `pspusbbus.h`), registered while the module is loaded, which sets up the device with the desktop from the descriptors of the driver.
  * The bus driver tells the driver when the desktop configured the device (attached), so the endpoints can transfer, and when it's detached (unplugged, or deactivated by the app).
  * It passes on the requests it doesn't answer itself, of which the driver answers the ones of Windows for its Microsoft OS descriptors, so Windows gives it WinUSB without a driver to install.
  *
- * Once attached, the first read or write does the handshake of the desktop (see `pspdisp_usb_handshake()`), then the data goes through the endpoints as it is.
+ * Once attached, the data goes through the endpoints as it is.
  * Each transfer goes through a buffer, as the USB hardware reads and writes the memory without the cache of the CPU.
  * A transfer waits until the desktop takes or sends the data, or until the driver is detached (which the app does to stop a transfer).
  */
@@ -47,21 +47,9 @@ PSP_MODULE_INFO("PSPdispUSB", PSP_MODULE_KERNEL, 1, 0);
 #define PSPDISP_USB_INTERFACE_GUID_NAME                u"DeviceInterfaceGUID"
 #define PSPDISP_USB_INTERFACE_GUID                     u"{21EFA200-DE10-44A9-BB86-AD29A2FD1E74}" // Device interface of the PSP, which WinUSB applications can find it by
 
-#define PSPDISP_USB_HANDSHAKE_MAGIC          0x782F0812 // Sent by the desktop to start the handshake, and first field of the hello (`HOSTFS_MAGIC` of USBHostFS)
-#define PSPDISP_USB_HELLO_COMMAND            0x8FFC0000 // Command of the hello (`HOSTFS_CMD_HELLO` of USBHostFS)
-
 #define PSPDISP_USB_BUFFER_SIZE              (64 * 1024)         				// Size of the buffer of the transfers, bigger data goes in several transfers
 #define PSPDISP_USB_CACHE_LINE_SIZE          64                  				// Size of a line of the data cache of the CPU
 #define PSPDISP_USB_TRANSFER_DONE_EVENT      0b00000000000000000000000000000001	// Bit of the event flag of the transfers, set when the transfer is done
-
-/**
- * @brief The hello the PSP sends in the handshake, which the desktop sends back.
- */
-typedef struct {
-	u32 magic; // `PSPDISP_USB_HANDSHAKE_MAGIC`
-	u32 command; // `PSPDISP_USB_HELLO_COMMAND`
-	u32 extra_size; // Size of the data following it, none
-} PSPdispUSBHello;
 
 /**
  * @brief The Microsoft OS string (string `PSPDISP_USB_MICROSOFT_OS_STRING_INDEX`), which tells Windows the request to ask for the Microsoft OS feature descriptors with.
@@ -201,7 +189,6 @@ struct UsbdDeviceReq pspdisp_usb_transfer_request; // The transfer being done
 struct UsbdDeviceReq pspdisp_usb_answer_request; // The answer to a request of the desktop on the control endpoint
 u8 pspdisp_usb_buffer[PSPDISP_USB_BUFFER_SIZE] __attribute__((aligned(PSPDISP_USB_CACHE_LINE_SIZE))); // The data of the transfer, on whole lines of the cache, so dropping them from the cache drops nothing else
 volatile bool pspdisp_usb_attached = false; // If the desktop configured the device, so its endpoints can transfer
-volatile bool pspdisp_usb_connected = false; // If the handshake was done since the device was attached
 
 /**
  * @brief Lay out the descriptors as the bus driver reads them, for a speed.
@@ -306,7 +293,6 @@ int pspdisp_usb_on_unknown(int, int, int) {
  */
 int pspdisp_usb_on_attach(int speed, void *, void *) {
 	pspdisp_usb_attached = true;
-	pspdisp_usb_connected = false; // Each configuration starts with a handshake
 	return 0;
 }
 
@@ -317,7 +303,6 @@ int pspdisp_usb_on_attach(int speed, void *, void *) {
  */
 int pspdisp_usb_on_detach(int, int, int) {
 	pspdisp_usb_attached = false;
-	pspdisp_usb_connected = false;
 	return 0;
 }
 
@@ -483,38 +468,6 @@ bool pspdisp_usb_send(const void *data, u32 size) {
 	return true;
 }
 
-// TODO: remove this PSPlink handshake from the PSP and desktop; we don't need it
-/**
- * @brief Do the handshake of the desktop, which starts its connection.
- *
- * The desktop sends `PSPDISP_USB_HANDSHAKE_MAGIC`, then the PSP sends its hello, which the desktop sends back.
- *
- * @return `true` if the desktop is connected, or `false` if it failed.
- */
-bool pspdisp_usb_handshake() {
-	u32 magic = 0;
-	if (!pspdisp_usb_receive(&magic, sizeof(magic)) || magic != PSPDISP_USB_HANDSHAKE_MAGIC) return false;
-
-	const PSPdispUSBHello hello = { .magic = PSPDISP_USB_HANDSHAKE_MAGIC, .command = PSPDISP_USB_HELLO_COMMAND };
-	if (!pspdisp_usb_send(&hello, sizeof(hello))) return false;
-
-	PSPdispUSBHello answer = {0};
-	return pspdisp_usb_receive(&answer, sizeof(answer)) && answer.magic == hello.magic && answer.command == hello.command;
-}
-
-/**
- * @brief Connect the desktop if it's not, once the device is attached.
- *
- * @return `true` if the desktop is connected, or `false` if it failed.
- */
-bool pspdisp_usb_connect() {
-	if (!pspdisp_usb_attached) return false;
-
-	if (!pspdisp_usb_connected)
-		pspdisp_usb_connected = pspdisp_usb_handshake();
-	return pspdisp_usb_connected;
-}
-
 bool pspdisp_usb_read(void *data, u32 size) {
 	if (data == NULL) return false;
 
@@ -523,7 +476,7 @@ bool pspdisp_usb_read(void *data, u32 size) {
 	bool read = false;
 
 	if (sceKernelWaitSema(pspdisp_usb_lock_id, 1, NULL) >= 0) {
-		read = pspdisp_usb_connect() && pspdisp_usb_receive(data, size);
+		read = pspdisp_usb_attached && pspdisp_usb_receive(data, size);
 		sceKernelSignalSema(pspdisp_usb_lock_id, 1);
 	}
 
@@ -539,7 +492,7 @@ bool pspdisp_usb_write(const void *data, u32 size) {
 	bool written = false;
 
 	if (sceKernelWaitSema(pspdisp_usb_lock_id, 1, NULL) >= 0) {
-		written = pspdisp_usb_connect() && pspdisp_usb_send(data, size);
+		written = pspdisp_usb_attached && pspdisp_usb_send(data, size);
 		sceKernelSignalSema(pspdisp_usb_lock_id, 1);
 	}
 
