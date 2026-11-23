@@ -156,7 +156,6 @@ void pspdisp_daemon_session_build_com_settings(PSPdispDaemonSession *session) {
 
 	session->com_settings = (PSPdispComSettings) {
 		.device_index = 0,
-		.screen_rotation = PSPDISP_COM_ROTATION_0, // The display settings of the computer rotate the virtual display
 		.screen_viewport = PSPDISP_COM_VIEWPORT_480X272, // The virtual display is already the size of the PSP
 		.quality = streaming_settings->quality,
 		.screen_no_compression = streaming_settings->uncompressed,

@@ -8,8 +8,6 @@
 
 /*
  * Turns a frame of the virtual display into the image of a frame of the old protocol: a JPEG, or an uncompressed bitmap (see `PSPDISP_COM_FLAG_IMAGE_IS_UNCOMPRESSED`).
- *
- * The image is never rotated: the display settings of the computer rotate the virtual display, for a PSP held vertically.
  */
 
 #pragma once
