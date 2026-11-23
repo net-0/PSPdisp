@@ -83,7 +83,6 @@ char* optionsClockSpeed[] = {"Default", "33 Mhz", "66 Mhz", "111 Mhz", "222 Mhz"
 char* optionsBrightness[] = {"OFF", "Lower brightness", "Turn off backlight"};
 char* optionsAutostart[] = {"OFF", "Use WLAN", "Use USB"};
 char* optionsScreenMode[] = {"Fit Screen", "Fit Screen (16:9)", "Follow Mouse (mode 1)", "Follow Mouse (mode 2)", "Static Viewport"};
-char* optionsRotation[] = {"OFF", "90 degree", "180 degree", "270 degree"};
 char* optionsOkCancelButton[] = {"System default", "X = OK and O = Cancel", "O = OK and X = Cancel"};
 char* optionsQuality[] = {"Lowest", "Low", "Medium", "High", "Highest"};
 char* optionsInterval[] = {"Continuous", "Shortest", "Short", "Medium", "Long", "Longest"};
@@ -198,7 +197,6 @@ menuEntry pcSettingsScreen[] =
 {
   { MENU_PC_SCREEN, "Screen mode", (int*)&configPCSettings.settings.screenMode, 3, 0, 4, 1, TYPE_INTEGER_NAMED, optionsScreenMode, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
   { MENU_PC_SCREEN, "Viewport size", (int*)&configPCSettings.settings.screenViewport, 0, 0, 14, 1, TYPE_INTEGER_NAMED, optionsViewport, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
-  { MENU_PC_SCREEN, "Rotation", (int*)&configPCSettings.settings.screenRotation, 0, 0, 3, 1, TYPE_INTEGER_NAMED, optionsRotation, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
   { MENU_PC_SCREEN, "Quality", (int*)&configPCSettings.settings.quality, 2, 0, 4, 1, TYPE_INTEGER_NAMED, optionsQuality, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
   { MENU_PC_SCREEN, "No compression", (int*)&configPCSettings.settings.screenNoCompression, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
   { MENU_PC_SCREEN, "Update interval", (int*)&configPCSettings.settings.updateInterval, 0, 0, 5, 1, TYPE_INTEGER_NAMED, optionsInterval, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback }
@@ -229,7 +227,7 @@ menuEntry pcSettingsMisc[] =
 menuProperties mainMenu = { MENU_MAIN, "Main Menu", NULL, mainMenuSettings, 4, MENU_NONE, MENU_NONE };
 menuProperties inGameMenu = { MENU_INGAME, "Menu", NULL, inGameMenuSettings, 5, MENU_NONE, MENU_NONE };
 
-menuProperties pcSettingsScreenMenu = { MENU_PC_SCREEN, "PC Settings - Screen", "1/3", pcSettingsScreen, 6, MENU_PC_MISC, MENU_PC_DISPLAY };
+menuProperties pcSettingsScreenMenu = { MENU_PC_SCREEN, "PC Settings - Screen", "1/3", pcSettingsScreen, 5, MENU_PC_MISC, MENU_PC_DISPLAY };
 menuProperties pcSettingsDisplayMenu = { MENU_PC_DISPLAY, "PC Settings - Display", "2/3", pcSettingsDisplay, 4, MENU_PC_SCREEN, MENU_PC_MISC };
 menuProperties pcSettingsMiscMenu = { MENU_PC_MISC, "PC Settings - Misc", "3/3", pcSettingsMisc, 4, MENU_PC_DISPLAY, MENU_PC_SCREEN };
 

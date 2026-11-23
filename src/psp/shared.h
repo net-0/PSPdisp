@@ -26,12 +26,6 @@
 #define COM_FLAGS_IMAGE_IS_PNG              0x00000020
 #define COM_FLAGS_IMAGE_IS_UNCOMPRESSED     0x00000040
 
-#define COM_FLAGS_IMAGE_IS_ROTATED_90_DEG   0x00000100
-#define COM_FLAGS_IMAGE_IS_ROTATED_180_DEG  0x00000200
-#define COM_FLAGS_IMAGE_IS_ROTATED_270_DEG  0x00000400
-
-#define COM_FLAGS_IMAGE_ROTATION_MASK       0x00000700
-
 #define COM_FLAGS_AUDIO_11025_HZ            0x00001000
 #define COM_FLAGS_AUDIO_22050_HZ            0x00002000
 #define COM_FLAGS_AUDIO_44100_HZ            0x00004000
@@ -55,7 +49,6 @@ typedef struct
   unsigned int deviceIndex;
   unsigned int deviceUseSideShow;
   unsigned int screenMode;
-  unsigned int screenRotation;
   unsigned int screenViewport;
   unsigned int quality;
   unsigned int screenNoCompression;

@@ -27,7 +27,7 @@ SceUID g_compressThreadId;
 void compressInit();
 void compressTerm();
 void compressClearBuffers();
-void compressConvertBmp(comFrameHeader* frameHeader);
+void compressConvertBmp();
 void compressTermJpegDecoding();
 int compressInitJpegDecoding();
 int compressInitPngDecoding();

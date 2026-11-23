@@ -25,7 +25,7 @@
  * The settings are the desktop options that the PSP shows and changes on its "PC Settings" menu.
  *
  * DEPRECATED: every definition of this file is going to be replaced soon by a simpler protocol, easier to maintain, so don't build anything new on them.
- * Many of them are likely to go, e.g. `PSPDISP_COM_FLAG_IMAGE_IS_PNG` (the desktop never sends PNG images) or the `PSPDISP_COM_FLAG_IMAGE_IS_ROTATED_*` flags (the desktop never rotates the images, the display settings of the computer rotate the virtual display).
+ * Many of them are likely to go, e.g. `PSPDISP_COM_FLAG_IMAGE_IS_PNG` (the desktop never sends PNG images).
  */
 
 #define PSPDISP_COM_HEADER_MAGIC 0xAFFE0600 // First value of every frame and response header, to recognize them
@@ -49,10 +49,6 @@ typedef enum: uint32_t {
 	PSPDISP_COM_FLAG_IMAGE_IS_JPEG            = 0b00000000000000000000000000010000, // Frame: the image is a JPEG
 	PSPDISP_COM_FLAG_IMAGE_IS_PNG             = 0b00000000000000000000000000100000, // Frame: the image is a PNG (the PSP decodes it, but the desktop never sends one)
 	PSPDISP_COM_FLAG_IMAGE_IS_UNCOMPRESSED    = 0b00000000000000000000000001000000, // Frame: the image is uncompressed, 24 bpp in B,G,R order with the rows bottom-up (a Windows bitmap without its headers)
-	PSPDISP_COM_FLAG_IMAGE_IS_ROTATED_90_DEG  = 0b00000000000000000000000100000000, // Frame: the image is 272x480 and the PSP draws it rotated by 90 degrees
-	PSPDISP_COM_FLAG_IMAGE_IS_ROTATED_180_DEG = 0b00000000000000000000001000000000, // Frame: the image is 480x272 and the PSP draws it rotated by 180 degrees
-	PSPDISP_COM_FLAG_IMAGE_IS_ROTATED_270_DEG = 0b00000000000000000000010000000000, // Frame: the image is 272x480 and the PSP draws it rotated by 270 degrees
-	PSPDISP_COM_FLAG_IMAGE_ROTATION_MASK      = 0b00000000000000000000011100000000, // Mask of the 3 rotation flags, without any the image is 480x272 and not rotated
 	PSPDISP_COM_FLAG_AUDIO_11025_HZ           = 0b00000000000000000001000000000000, // Frame: the audio sample rate is 11025 Hz
 	PSPDISP_COM_FLAG_AUDIO_22050_HZ           = 0b00000000000000000010000000000000, // Frame: the audio sample rate is 22050 Hz
 	PSPDISP_COM_FLAG_AUDIO_44100_HZ           = 0b00000000000000000100000000000000, // Frame: the audio sample rate is 44100 Hz
@@ -73,16 +69,6 @@ typedef enum: uint32_t {
 	PSPDISP_COM_SCREEN_MODE_FOLLOW_MOUSE_2  = 3, // A viewport centered on the mouse, stopping at the display edges
 	PSPDISP_COM_SCREEN_MODE_STATIC_VIEWPORT = 4, // A viewport at a fixed origin, set on the desktop ("Set screen origin")
 } PSPdispComScreenMode;
-
-/**
- * @brief Rotation of the image sent to the PSP (`PSPdispComSettings.screen_rotation`), see the `PSPDISP_COM_FLAG_IMAGE_IS_ROTATED_*` flags.
- */
-typedef enum: uint32_t {
-	PSPDISP_COM_ROTATION_0   = 0, // Not rotated
-	PSPDISP_COM_ROTATION_90  = 1, // Rotated by 90 degrees
-	PSPDISP_COM_ROTATION_180 = 2, // Rotated by 180 degrees
-	PSPDISP_COM_ROTATION_270 = 3, // Rotated by 270 degrees
-} PSPdispComRotation;
 
 /**
  * @brief Size in desktop pixels of the viewport sent to the PSP (`PSPdispComSettings.screen_viewport`), scaled to the PSP screen.
@@ -150,7 +136,6 @@ typedef struct {
 	uint32_t device_index;                    // Unused, always 0
 	uint32_t device_use_sideshow;             // Flag: send the Windows SideShow gadgets instead of the display ("SideShow mode")
 	PSPdispComScreenMode screen_mode;         // Area of the display sent to the PSP
-	PSPdispComRotation screen_rotation;       // Rotation of the image
 	PSPdispComViewport screen_viewport;       // Size of the viewport, for the viewport screen modes
 	PSPdispComQuality quality;                // JPEG quality of the image
 	uint32_t screen_no_compression;           // Flag: send the images uncompressed (`PSPDISP_COM_FLAG_IMAGE_IS_UNCOMPRESSED`) instead of JPEG
@@ -168,7 +153,7 @@ typedef struct {
 	uint32_t preset_do_set;                   // Flag: the PSP asks the desktop to apply the preset `preset_index`
 } PSPdispComSettings;
 
-static_assert(sizeof(PSPdispComSettings) == 76, "The settings must be 19 values of 4 bytes");
+static_assert(sizeof(PSPdispComSettings) == 72, "The settings must be 18 values of 4 bytes");
 
 /**
  * @brief Header of a frame, sent by the desktop to the PSP before its data.
@@ -213,7 +198,7 @@ typedef struct {
 	PSPdispComSettings settings;       // The settings, as on the PSP
 } PSPdispComSettingsResponse;
 
-static_assert(sizeof(PSPdispComSettingsResponse) == 14 + 76, "A settings response must be a response header and the settings");
+static_assert(sizeof(PSPdispComSettingsResponse) == 14 + 72, "A settings response must be a response header and the settings");
 
 /**
  * @brief Settings received by the PSP, with the names of their entries.
@@ -227,7 +212,7 @@ typedef struct {
 	char presets[PSPDISP_COM_MAX_PRESETS][PSPDISP_COM_NAME_SIZE];         // Names of the presets, `settings.preset_count` of them
 } PSPdispComSettingsReceived;
 
-static_assert(sizeof(PSPdispComSettingsReceived) == 76 + (10 + 20 + 20) * 32, "The received settings must be the settings and all their names");
+static_assert(sizeof(PSPdispComSettingsReceived) == 72 + (10 + 20 + 20) * 32, "The received settings must be the settings and all their names");
 
 #pragma scalar_storage_order default
 #pragma pack(pop)

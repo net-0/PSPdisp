@@ -17,7 +17,6 @@
 
 bool l_sceJpegAvailable = false; // For libjpeg fallback
 bool l_buffersCleared = false; // Avoid clearing the buffers if they are already empty
-bool l_lastFrameWasRotated = false; // Used to determine whether the Jpeg decoder has to be reset
 SceUID l_jpegModuleId;
 
 unsigned char __attribute__((aligned(16))) l_pixelBuffer_1[480 * 272 * 4];
@@ -134,7 +133,6 @@ int compressInitJpegDecoding()
       if (sceJpegCreateMJpeg(480, 272) == 0) 
       {
         // Success!
-        l_lastFrameWasRotated = false;
         l_sceJpegAvailable = true;
         return 0;
       }
@@ -234,27 +232,16 @@ void compressTermPngDecoding()
   for the framebuffer.
   ---------------------------------------------------
 */
-void compressConvertBmp(comFrameHeader* frameHeader)
+void compressConvertBmp()
 {
   // Bloat the 24 Bit values to 32 Bit
   // Windows Bitmaps are in BGR order and upside down
 
-  unsigned int imageWidth;
-  unsigned int imageHeight;
+  unsigned int imageWidth = 480;
+  unsigned int imageHeight = 272;
 
   unsigned char* pixelsBackup = (unsigned char*)g_pixelBuffer;
   unsigned char* dataBackup = g_comImageReceiveBuffer;
-  
-  if ((frameHeader->flags & COM_FLAGS_IMAGE_IS_ROTATED_90_DEG) || (frameHeader->flags & COM_FLAGS_IMAGE_IS_ROTATED_270_DEG))
-  {
-    imageWidth = 272;
-    imageHeight = 480;
-  }
-  else
-  {
-    imageWidth = 480;
-    imageHeight = 272;
-  }
 
   unsigned char* inPixels;
   unsigned char* outPixels;
@@ -309,24 +296,9 @@ void compressConvertBmp(comFrameHeader* frameHeader)
 */
 void compressDecompressJpeg(comFrameHeader* frameHeader)
 {
-  static bool lastFrameRotated = false;
-  bool rotated = ((frameHeader->flags & COM_FLAGS_IMAGE_IS_ROTATED_90_DEG) || (frameHeader->flags & COM_FLAGS_IMAGE_IS_ROTATED_270_DEG));
-
   if (l_sceJpegAvailable)
   {
     // Use sceJpeg* functions
-    if (lastFrameRotated != rotated)
-    {
-      sceJpegDeleteMJpeg();
-
-      if (rotated)
-        sceJpegCreateMJpeg(272, 480);
-      else
-        sceJpegCreateMJpeg(480, 272);
-
-      lastFrameRotated = rotated;
-    }
-
     sceJpegDecodeMJpeg(&g_comImageReceiveBuffer[0], frameHeader->imageSize, g_pixelBuffer, 0);
   }
   else
@@ -493,7 +465,7 @@ void compressDecodingAndDrawingThread(SceSize args, void *argp)
     // Decode jpeg
     if (frameHeader->flags & COM_FLAGS_IMAGE_IS_UNCOMPRESSED)
     {
-      compressConvertBmp(frameHeader);
+      compressConvertBmp();
     }
     else if (frameHeader->flags & COM_FLAGS_IMAGE_IS_JPEG)
     {
@@ -505,7 +477,7 @@ void compressDecodingAndDrawingThread(SceSize args, void *argp)
     }
 
     // Draw image
-    graphicDrawFrame((unsigned int*)g_pixelBuffer, (frameHeader->flags & COM_FLAGS_IMAGE_ROTATION_MASK), false);
+    graphicDrawFrame((unsigned int*)g_pixelBuffer, false);
   }
 
   // Don't draw when the menu is showing

@@ -158,7 +158,6 @@ void pspdisp_daemon_session_build_com_settings(PSPdispDaemonSession *session) {
 		.device_index = 0,
 		.device_use_sideshow = 0, // No SideShow, it's a Windows Vista gadget platform
 		.screen_mode = PSPDISP_COM_SCREEN_MODE_FIT_SCREEN, // The virtual display is already the size of the PSP
-		.screen_rotation = PSPDISP_COM_ROTATION_0, // The display settings of the computer rotate the virtual display
 		.screen_viewport = PSPDISP_COM_VIEWPORT_480X272,
 		.quality = streaming_settings->quality,
 		.screen_no_compression = streaming_settings->uncompressed,

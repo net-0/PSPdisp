@@ -28,12 +28,9 @@
 
 
 unsigned char* l_lastDrawnFrame; // Stores a pointer to the last drawn frame contents
-unsigned int l_lastRotation; // Last drawn frames orientation
 
 bool l_forceFrameDrawing = false;
 
-ScePspFVector3 l_moveToScreenCenter = {240.0f, 136.0f, 0.0f};
-   
 
 
 /*
@@ -47,7 +44,6 @@ void graphicInit()
   l_frameBuffer = (void*)0;
 
   l_lastDrawnFrame = NULL;
-  l_lastRotation = 0;
 
   sceGuInit();
 
@@ -360,7 +356,7 @@ void graphicRedrawLastFrame()
   if (l_lastDrawnFrame == NULL)
     l_lastDrawnFrame = g_pixelBuffer;
 
-  graphicDrawFrame((unsigned int*)l_lastDrawnFrame, l_lastRotation, true);
+  graphicDrawFrame((unsigned int*)l_lastDrawnFrame, true);
 }
 
 
@@ -372,10 +368,9 @@ void graphicRedrawLastFrame()
   Copy the decoded image into the framebuffer.
   ---------------------------------------------------
 */
-void graphicDrawFrame(unsigned int* textureData, unsigned int rotation, bool forceDrawing)
+void graphicDrawFrame(unsigned int* textureData, bool forceDrawing)
 {
   l_lastDrawnFrame = (unsigned char*)textureData;
-  l_lastRotation = rotation;
 
   // Don't overwrite the menu
   if (g_menuActive && !forceDrawing)
@@ -383,47 +378,16 @@ void graphicDrawFrame(unsigned int* textureData, unsigned int rotation, bool for
 
   sceGuStart(GU_DIRECT, list);
 
-  float imageWidth = 0.0f;
-  float imageHeight = 0.0f;
-  float rotate = 0.0f;
-
-  switch (rotation)
-  {
-    case 0:
-      rotate = 0.0f;
-      imageWidth = 480.0f;
-      imageHeight = 272.0f;
-      break;
-    case COM_FLAGS_IMAGE_IS_ROTATED_90_DEG:
-      rotate = GU_PI * 0.5f;
-      imageWidth = 272.0f;
-      imageHeight = 480.0f;
-      break;
-    case COM_FLAGS_IMAGE_IS_ROTATED_180_DEG:
-      rotate = GU_PI;
-      imageWidth = 480.0f;
-      imageHeight = 272.0f;
-      break;
-    case COM_FLAGS_IMAGE_IS_ROTATED_270_DEG:
-      rotate = GU_PI * 1.5f;
-      imageWidth = 272.0f;
-      imageHeight = 480.0f;
-      break;
-  }
-
   graphicSetupOrtho();
-
-  sceGumTranslate(&l_moveToScreenCenter);
-  sceGumRotateZ(rotate);
 
   sceGuTexMode(GU_PSM_8888, 0, 0, GU_FALSE);	
   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
   sceGuTexFilter(GU_NEAREST,GU_NEAREST);
   sceGuTexOffset(0.0f, 0.0f);
 
-  sceGuTexImage(0, 512, 512, imageWidth, (void*)textureData);
+  sceGuTexImage(0, 512, 512, SCR_WIDTH, (void*)textureData);
 
-  graphicSlicedBlit(-0.5f * imageWidth, -0.5 * imageHeight, imageWidth, imageHeight, 512.0f, 512.0f);
+  graphicSlicedBlit(0.0f, 0.0f, SCR_WIDTH, SCR_HEIGHT, 512.0f, 512.0f);
 
   sceGuFinish();
   sceGuSync(0,0);
