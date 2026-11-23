@@ -54,7 +54,6 @@ typedef struct
 {
   unsigned int deviceIndex;
   unsigned int deviceUseSideShow;
-  unsigned int screenMode;
   unsigned int screenRotation;
   unsigned int screenViewport;
   unsigned int quality;
