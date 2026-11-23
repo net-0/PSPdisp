@@ -210,8 +210,7 @@ menuEntry pcSettingsDisplay[] =
 {
   { MENU_PC_DISPLAY, "Display streaming", (int*)&configPCSettings.settings.displayEnable, 1, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
   { MENU_PC_DISPLAY, "Display device", (int*)&configPCSettings.settings.displayDeviceIndex, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsViewport, MENU_INPUT_LR_SELECT, menuPcSettingsDeviceCallback },
-  { MENU_PC_DISPLAY, "Autoselect display", (int*)&configPCSettings.settings.displayAutoselect, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
-  { MENU_PC_DISPLAY, "SideShow mode", (int*)&configPCSettings.settings.deviceUseSideShow, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback }
+  { MENU_PC_DISPLAY, "Autoselect display", (int*)&configPCSettings.settings.displayAutoselect, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback }
 };
 
 
@@ -230,7 +229,7 @@ menuProperties mainMenu = { MENU_MAIN, "Main Menu", NULL, mainMenuSettings, 4, M
 menuProperties inGameMenu = { MENU_INGAME, "Menu", NULL, inGameMenuSettings, 5, MENU_NONE, MENU_NONE };
 
 menuProperties pcSettingsScreenMenu = { MENU_PC_SCREEN, "PC Settings - Screen", "1/3", pcSettingsScreen, 6, MENU_PC_MISC, MENU_PC_DISPLAY };
-menuProperties pcSettingsDisplayMenu = { MENU_PC_DISPLAY, "PC Settings - Display", "2/3", pcSettingsDisplay, 4, MENU_PC_SCREEN, MENU_PC_MISC };
+menuProperties pcSettingsDisplayMenu = { MENU_PC_DISPLAY, "PC Settings - Display", "2/3", pcSettingsDisplay, 3, MENU_PC_SCREEN, MENU_PC_MISC };
 menuProperties pcSettingsMiscMenu = { MENU_PC_MISC, "PC Settings - Misc", "3/3", pcSettingsMisc, 4, MENU_PC_DISPLAY, MENU_PC_SCREEN };
 
 menuProperties generalMenu = { MENU_GENERAL, "General Settings", "1/7", generalSettings, 6, MENU_AUTOSTART, MENU_WLAN_IP };
