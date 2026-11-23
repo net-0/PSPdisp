@@ -24,7 +24,7 @@
  * @brief Read data from the desktop, all of it.
  *
  * It fails at once while the desktop didn't configure the PSP (e.g. it's not plugged).
- * Otherwise it waits for the desktop to connect and send the data, until the driver is detached (e.g. by `sceUsbDeactivate()`).
+ * Otherwise it waits for the desktop to send the data, until the driver is detached (e.g. by `sceUsbDeactivate()`).
  * One read or write is done at a time, the others wait for it.
  *
  * @param data Where to write the data.
@@ -37,7 +37,7 @@ bool pspdisp_usb_read(void *data, u32 size);
  * @brief Write data to the desktop, all of it.
  *
  * It fails at once while the desktop didn't configure the PSP (e.g. it's not plugged).
- * Otherwise it waits for the desktop to connect and take the data, until the driver is detached (e.g. by `sceUsbDeactivate()`).
+ * Otherwise it waits for the desktop to take the data, until the driver is detached (e.g. by `sceUsbDeactivate()`).
  * One read or write is done at a time, the others wait for it.
  *
  * @param data The data.
