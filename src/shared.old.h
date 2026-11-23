@@ -25,7 +25,7 @@
  * The settings are the desktop options that the PSP shows and changes on its "PC Settings" menu.
  *
  * DEPRECATED: every definition of this file is going to be replaced soon by a simpler protocol, easier to maintain, so don't build anything new on them.
- * Many of them are likely to go, e.g. `PSPDISP_COM_FLAG_IMAGE_IS_PNG` (the desktop never sends PNG images) or the `PSPDISP_COM_FLAG_IMAGE_IS_ROTATED_*` flags (the desktop never rotates the images, the display settings of the computer rotate the virtual display).
+ * Many of them are likely to go, e.g. the `PSPDISP_COM_FLAG_IMAGE_IS_ROTATED_*` flags (the desktop never rotates the images, the display settings of the computer rotate the virtual display).
  */
 
 #define PSPDISP_COM_HEADER_MAGIC 0xAFFE0600 // First value of every frame and response header, to recognize them
@@ -47,7 +47,6 @@ typedef enum: uint32_t {
 	PSPDISP_COM_FLAG_CONTAINS_SETTINGS_DATA   = 0b00000000000000000000000000000100, // Frame: the settings follow the audio (`settings_size` bytes), response: it's a `PSPdispComSettingsResponse` with settings changed on the PSP
 	PSPDISP_COM_FLAG_ENABLE_OSK               = 0b00000000000000000000000000001000, // Frame: the PSP may open its on-screen keyboard (Danzeff) with the Select button
 	PSPDISP_COM_FLAG_IMAGE_IS_JPEG            = 0b00000000000000000000000000010000, // Frame: the image is a JPEG
-	PSPDISP_COM_FLAG_IMAGE_IS_PNG             = 0b00000000000000000000000000100000, // Frame: the image is a PNG (the PSP decodes it, but the desktop never sends one)
 	PSPDISP_COM_FLAG_IMAGE_IS_UNCOMPRESSED    = 0b00000000000000000000000001000000, // Frame: the image is uncompressed, 24 bpp in B,G,R order with the rows bottom-up (a Windows bitmap without its headers)
 	PSPDISP_COM_FLAG_IMAGE_IS_ROTATED_90_DEG  = 0b00000000000000000000000100000000, // Frame: the image is 272x480 and the PSP draws it rotated by 90 degrees
 	PSPDISP_COM_FLAG_IMAGE_IS_ROTATED_180_DEG = 0b00000000000000000000001000000000, // Frame: the image is 480x272 and the PSP draws it rotated by 180 degrees

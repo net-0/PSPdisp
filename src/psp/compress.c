@@ -57,7 +57,6 @@ void compressInit()
   compressClearBuffers();
 
   compressInitJpegDecoding();
-  compressInitPngDecoding();
 
   // Create decompression thread
   g_compressThreadId = sceKernelCreateThread("compressThread", (SceKernelThreadEntry)compressDecodingAndDrawingThread, 0x18, 0x10000, PSP_THREAD_ATTR_USER, 0);    
@@ -79,7 +78,6 @@ void compressTerm()
   sceKernelDeleteThread(g_compressThreadId);
 
   compressTermJpegDecoding();
-  compressTermPngDecoding();
 }
 
 
@@ -195,34 +193,6 @@ void compressTermJpegDecoding()
   }
 }
 
-
-
-
-
-/*
-  compressInitPngDecoding
-  ---------------------------------------------------
-  Initialize the PNG decompression.
-  ---------------------------------------------------
-*/
-int compressInitPngDecoding()
-{
-  return 0;
-}
-
-
-
-
-/*
-  compressTermPngDecoding
-  ---------------------------------------------------
-  Shut down the PNG decompression.
-  ---------------------------------------------------
-*/
-void compressTermPngDecoding()
-{
-  return;
-}
 
 
 
@@ -371,103 +341,6 @@ void compressDecompressJpeg(comFrameHeader* frameHeader)
 
 
 /*
-  compressPngReadDataCallback
-  ---------------------------------------------------
-  Callback for the PNG decompressor, managing reading
-  the input data.
-  ---------------------------------------------------
-*/
-void compressPngReadDataCallback(png_structp png_ptr, png_bytep data, png_size_t length)
-{
-  unsigned int* bufferPosition = (unsigned int*)png_get_io_ptr(png_ptr);
-  memcpy(data, &g_comImageReceiveBuffer[*bufferPosition], length);
-  *bufferPosition += length;
-}
-
-
-
-
-/*
-  compressDecompressPng
-  ---------------------------------------------------
-  Decompress a PNG input image. Unusably slow.
-  ---------------------------------------------------
-*/
-void compressDecompressPng(comFrameHeader* frameHeader)
-{
-  png_structp png_ptr;
-  png_infop info_ptr;
-  unsigned int sig_read = 0;
-  png_uint_32 width;
-  png_uint_32 height;
-  int bit_depth;
-  int color_type;
-  int interlace_type;
-  size_t x, y;
-  u32* line;
-
-  png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-  if (png_ptr == NULL) 
-  {
-    return;
-  }
-
-  info_ptr = png_create_info_struct(png_ptr);
-  if (info_ptr == NULL) 
-  {
-    png_destroy_read_struct(&png_ptr, NULL, NULL);
-    return;
-  }
-
-  unsigned int bufferPosition = 0;
-  png_set_read_fn(png_ptr, &bufferPosition, &compressPngReadDataCallback);
-
-  png_set_sig_bytes(png_ptr, sig_read);
-  png_read_info(png_ptr, info_ptr);
-  png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, NULL, NULL);
-  png_set_strip_16(png_ptr);
-  png_set_packing(png_ptr);
-
-  if (color_type == PNG_COLOR_TYPE_PALETTE)
-    png_set_palette_to_rgb(png_ptr);
-
-  if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8) 
-    png_set_expand_gray_1_2_4_to_8(png_ptr);
-
-  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) 
-    png_set_tRNS_to_alpha(png_ptr);
-
-  png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
-
-  line = (u32*)malloc(width * 4);
-  if (!line) 
-  {
-    png_destroy_read_struct(&png_ptr, NULL, NULL);
-    return;
-  }
-
-  for (y = 0; y < height; y++)
-  {
-    png_read_row(png_ptr, (u8*) line, NULL);
-    for (x = 0; x < width; x++)
-    {
-      ((unsigned int*)g_pixelBuffer)[y*width+x] = line[x];
-    }
-  }
-
-  free(line);
-
-  png_read_end(png_ptr, info_ptr);
-  png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-
-  sceKernelDcacheWritebackInvalidateAll();
-}
-
-
-
-
-
-/*
   decodingAndDrawingThread
   ---------------------------------------------------
   Thread for decoding and drawing the last frame.
@@ -498,10 +371,6 @@ void compressDecodingAndDrawingThread(SceSize args, void *argp)
     else if (frameHeader->flags & COM_FLAGS_IMAGE_IS_JPEG)
     {
       compressDecompressJpeg(frameHeader);
-    }
-    else if (frameHeader->flags & COM_FLAGS_IMAGE_IS_PNG)
-    {
-      compressDecompressPng(frameHeader);
     }
 
     // Draw image
