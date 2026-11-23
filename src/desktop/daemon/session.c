@@ -16,7 +16,7 @@
  *
  * The streaming settings start as saved (see `settings/settings.c`), the PSP changes them on its "PC Settings" menu (or applies a preset), and they're saved again, so the desktop app shows them.
  * When they change on the disk (e.g. from the desktop app), the session takes them before the next frame (see `snapshot.c`).
- * What the virtual display can't do is turned back to its default and sent back, so the PSP menu shows what is used: the screen modes and viewports (the virtual display is already the size of the PSP), the SideShow mode and the autoselection of the display (there's only one).
+ * What the virtual display can't do is turned back to its default and sent back, so the PSP menu shows what is used: the screen modes (the virtual display is already the size of the PSP), the SideShow mode and the autoselection of the display (there's only one).
  *
  * The PSP controls drive what the settings choose: the virtual gamepad, a control file (a virtual keyboard and mouse), or nothing (see `controller/controller.c`).
  */
@@ -159,7 +159,6 @@ void pspdisp_daemon_session_build_com_settings(PSPdispDaemonSession *session) {
 		.device_use_sideshow = 0, // No SideShow, it's a Windows Vista gadget platform
 		.screen_mode = PSPDISP_COM_SCREEN_MODE_FIT_SCREEN, // The virtual display is already the size of the PSP
 		.screen_rotation = PSPDISP_COM_ROTATION_0, // The display settings of the computer rotate the virtual display
-		.screen_viewport = PSPDISP_COM_VIEWPORT_480X272,
 		.quality = streaming_settings->quality,
 		.screen_no_compression = streaming_settings->uncompressed,
 		.update_interval = streaming_settings->update_interval,

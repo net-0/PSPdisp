@@ -88,8 +88,6 @@ char* optionsOkCancelButton[] = {"System default", "X = OK and O = Cancel", "O =
 char* optionsQuality[] = {"Lowest", "Low", "Medium", "High", "Highest"};
 char* optionsInterval[] = {"Continuous", "Shortest", "Short", "Medium", "Long", "Longest"};
 char* optionsTimeFormat[] = {"System default", "12 hour", "24 hour"};
-char* optionsViewport[] = {"480x272", "560x315", "640x360", "720x405", "800x450", "880x495", "960x544", "320x200",
-                           "320x240", "640x400", "640x480", "800x600", "060x034", "120x068", "240x136"};
 char* optionsSampleRate[] = {"11025 Hz", "22050 Hz", "44100 Hz"};
 
 
@@ -197,7 +195,6 @@ menuEntry autoStartSettings[] =
 menuEntry pcSettingsScreen[] =
 {
   { MENU_PC_SCREEN, "Screen mode", (int*)&configPCSettings.settings.screenMode, 3, 0, 4, 1, TYPE_INTEGER_NAMED, optionsScreenMode, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
-  { MENU_PC_SCREEN, "Viewport size", (int*)&configPCSettings.settings.screenViewport, 0, 0, 14, 1, TYPE_INTEGER_NAMED, optionsViewport, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
   { MENU_PC_SCREEN, "Rotation", (int*)&configPCSettings.settings.screenRotation, 0, 0, 3, 1, TYPE_INTEGER_NAMED, optionsRotation, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
   { MENU_PC_SCREEN, "Quality", (int*)&configPCSettings.settings.quality, 2, 0, 4, 1, TYPE_INTEGER_NAMED, optionsQuality, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
   { MENU_PC_SCREEN, "No compression", (int*)&configPCSettings.settings.screenNoCompression, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
@@ -209,7 +206,7 @@ menuEntry pcSettingsScreen[] =
 menuEntry pcSettingsDisplay[] =
 {
   { MENU_PC_DISPLAY, "Display streaming", (int*)&configPCSettings.settings.displayEnable, 1, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
-  { MENU_PC_DISPLAY, "Display device", (int*)&configPCSettings.settings.displayDeviceIndex, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsViewport, MENU_INPUT_LR_SELECT, menuPcSettingsDeviceCallback },
+  { MENU_PC_DISPLAY, "Display device", (int*)&configPCSettings.settings.displayDeviceIndex, 0, 0, 1, 1, TYPE_INTEGER_NAMED, NULL, MENU_INPUT_LR_SELECT, menuPcSettingsDeviceCallback },
   { MENU_PC_DISPLAY, "Autoselect display", (int*)&configPCSettings.settings.displayAutoselect, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
   { MENU_PC_DISPLAY, "SideShow mode", (int*)&configPCSettings.settings.deviceUseSideShow, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback }
 };
@@ -220,8 +217,8 @@ menuEntry pcSettingsMisc[] =
 {
   { MENU_PC_MISC, "Sound Streaming", (int*)&configPCSettings.settings.soundEnabled, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
   { MENU_PC_MISC, "Samplerate", (int*)&configPCSettings.settings.soundSampleRate, 0, 0, 2, 1, TYPE_INTEGER_NAMED, optionsSampleRate, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
-  { MENU_PC_MISC, "Control file", (int*)&configPCSettings.settings.controlIndex, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsViewport, MENU_INPUT_LR_SELECT, menuPcSettingsControlCallback },
-  { MENU_PC_MISC, "Preset", (int*)&configPCSettings.settings.presetIndex, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsViewport, MENU_INPUT_LR_SELECT | MENU_INPUT_CLICK, menuPcSettingsPresetCallback }
+  { MENU_PC_MISC, "Control file", (int*)&configPCSettings.settings.controlIndex, 0, 0, 1, 1, TYPE_INTEGER_NAMED, NULL, MENU_INPUT_LR_SELECT, menuPcSettingsControlCallback },
+  { MENU_PC_MISC, "Preset", (int*)&configPCSettings.settings.presetIndex, 0, 0, 1, 1, TYPE_INTEGER_NAMED, NULL, MENU_INPUT_LR_SELECT | MENU_INPUT_CLICK, menuPcSettingsPresetCallback }
 };
 
 
@@ -229,7 +226,7 @@ menuEntry pcSettingsMisc[] =
 menuProperties mainMenu = { MENU_MAIN, "Main Menu", NULL, mainMenuSettings, 4, MENU_NONE, MENU_NONE };
 menuProperties inGameMenu = { MENU_INGAME, "Menu", NULL, inGameMenuSettings, 5, MENU_NONE, MENU_NONE };
 
-menuProperties pcSettingsScreenMenu = { MENU_PC_SCREEN, "PC Settings - Screen", "1/3", pcSettingsScreen, 6, MENU_PC_MISC, MENU_PC_DISPLAY };
+menuProperties pcSettingsScreenMenu = { MENU_PC_SCREEN, "PC Settings - Screen", "1/3", pcSettingsScreen, 5, MENU_PC_MISC, MENU_PC_DISPLAY };
 menuProperties pcSettingsDisplayMenu = { MENU_PC_DISPLAY, "PC Settings - Display", "2/3", pcSettingsDisplay, 4, MENU_PC_SCREEN, MENU_PC_MISC };
 menuProperties pcSettingsMiscMenu = { MENU_PC_MISC, "PC Settings - Misc", "3/3", pcSettingsMisc, 4, MENU_PC_DISPLAY, MENU_PC_SCREEN };
 

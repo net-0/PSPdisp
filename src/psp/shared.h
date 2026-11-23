@@ -56,7 +56,6 @@ typedef struct
   unsigned int deviceUseSideShow;
   unsigned int screenMode;
   unsigned int screenRotation;
-  unsigned int screenViewport;
   unsigned int quality;
   unsigned int screenNoCompression;
   unsigned int updateInterval;

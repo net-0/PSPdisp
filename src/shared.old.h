@@ -85,30 +85,6 @@ typedef enum: uint32_t {
 } PSPdispComRotation;
 
 /**
- * @brief Size in desktop pixels of the viewport sent to the PSP (`PSPdispComSettings.screen_viewport`), scaled to the PSP screen.
- *
- * Only used by the viewport screen modes (`PSPDISP_COM_SCREEN_MODE_FOLLOW_MOUSE_1`, `_2` and `PSPDISP_COM_SCREEN_MODE_STATIC_VIEWPORT`).
- * The first sizes are 16:9 like the PSP, the next ones are classic desktop sizes, and the last ones zoom in (1/8, 1/4 and 1/2 of the PSP screen).
- */
-typedef enum: uint32_t {
-	PSPDISP_COM_VIEWPORT_480X272 = 0,  // 480x272, the PSP screen size (not scaled)
-	PSPDISP_COM_VIEWPORT_560X315 = 1,  // 560x315
-	PSPDISP_COM_VIEWPORT_640X360 = 2,  // 640x360
-	PSPDISP_COM_VIEWPORT_720X405 = 3,  // 720x405
-	PSPDISP_COM_VIEWPORT_800X450 = 4,  // 800x450
-	PSPDISP_COM_VIEWPORT_880X495 = 5,  // 880x495
-	PSPDISP_COM_VIEWPORT_960X544 = 6,  // 960x544, twice the PSP screen size
-	PSPDISP_COM_VIEWPORT_320X200 = 7,  // 320x200
-	PSPDISP_COM_VIEWPORT_320X240 = 8,  // 320x240
-	PSPDISP_COM_VIEWPORT_640X400 = 9,  // 640x400
-	PSPDISP_COM_VIEWPORT_640X480 = 10, // 640x480
-	PSPDISP_COM_VIEWPORT_800X600 = 11, // 800x600
-	PSPDISP_COM_VIEWPORT_60X34   = 12, // 60x34, 1/8 of the PSP screen size
-	PSPDISP_COM_VIEWPORT_120X68  = 13, // 120x68, 1/4 of the PSP screen size
-	PSPDISP_COM_VIEWPORT_240X136 = 14, // 240x136, 1/2 of the PSP screen size
-} PSPdispComViewport;
-
-/**
  * @brief JPEG quality of the images sent to the PSP (`PSPdispComSettings.quality`), the higher the bigger the frames.
  */
 typedef enum: uint32_t {
@@ -151,7 +127,6 @@ typedef struct {
 	uint32_t device_use_sideshow;             // Flag: send the Windows SideShow gadgets instead of the display ("SideShow mode")
 	PSPdispComScreenMode screen_mode;         // Area of the display sent to the PSP
 	PSPdispComRotation screen_rotation;       // Rotation of the image
-	PSPdispComViewport screen_viewport;       // Size of the viewport, for the viewport screen modes
 	PSPdispComQuality quality;                // JPEG quality of the image
 	uint32_t screen_no_compression;           // Flag: send the images uncompressed (`PSPDISP_COM_FLAG_IMAGE_IS_UNCOMPRESSED`) instead of JPEG
 	PSPdispComUpdateInterval update_interval; // Pause after each frame
@@ -168,7 +143,7 @@ typedef struct {
 	uint32_t preset_do_set;                   // Flag: the PSP asks the desktop to apply the preset `preset_index`
 } PSPdispComSettings;
 
-static_assert(sizeof(PSPdispComSettings) == 76, "The settings must be 19 values of 4 bytes");
+static_assert(sizeof(PSPdispComSettings) == 72, "The settings must be 18 values of 4 bytes");
 
 /**
  * @brief Header of a frame, sent by the desktop to the PSP before its data.
@@ -213,7 +188,7 @@ typedef struct {
 	PSPdispComSettings settings;       // The settings, as on the PSP
 } PSPdispComSettingsResponse;
 
-static_assert(sizeof(PSPdispComSettingsResponse) == 14 + 76, "A settings response must be a response header and the settings");
+static_assert(sizeof(PSPdispComSettingsResponse) == 14 + 72,"A settings response must be a response header and the settings");
 
 /**
  * @brief Settings received by the PSP, with the names of their entries.
@@ -227,7 +202,7 @@ typedef struct {
 	char presets[PSPDISP_COM_MAX_PRESETS][PSPDISP_COM_NAME_SIZE];         // Names of the presets, `settings.preset_count` of them
 } PSPdispComSettingsReceived;
 
-static_assert(sizeof(PSPdispComSettingsReceived) == 76 + (10 + 20 + 20) * 32, "The received settings must be the settings and all their names");
+static_assert(sizeof(PSPdispComSettingsReceived) == 72 +(10 + 20 + 20) * 32, "The received settings must be the settings and all their names");
 
 #pragma scalar_storage_order default
 #pragma pack(pop)
