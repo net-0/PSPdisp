@@ -23,7 +23,6 @@
 #define COM_FLAGS_ENABLE_OSK                0x00000008
 
 #define COM_FLAGS_IMAGE_IS_JPEG             0x00000010
-#define COM_FLAGS_IMAGE_IS_PNG              0x00000020
 #define COM_FLAGS_IMAGE_IS_UNCOMPRESSED     0x00000040
 
 #define COM_FLAGS_AUDIO_11025_HZ            0x00001000
@@ -47,8 +46,6 @@
 typedef struct
 {
   unsigned int deviceIndex;
-  unsigned int deviceUseSideShow;
-  unsigned int screenMode;
   unsigned int screenViewport;
   unsigned int quality;
   unsigned int screenNoCompression;

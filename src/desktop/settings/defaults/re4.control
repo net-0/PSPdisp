@@ -2,9 +2,6 @@
 ; for Resident Evil 4 in the way a XBox controller is set up.
 ; Left analog stick is mapped to the PSP analog stick,
 ; the right analog stick to the DPad.
-;
-; For best experience, set RE4 to 800x600 windowed
-; and PSPdisp to 800x450 static viewport.
 
 [Info]
 Version=0.3.0.0

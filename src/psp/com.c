@@ -14,7 +14,7 @@
 #include "compress.h"
 
 #include "menu.h"
-extern menuEntry pcSettingsDisplay[4];
+extern menuEntry pcSettingsDisplay[3];
 extern menuEntry pcSettingsMisc[4];
 
 
