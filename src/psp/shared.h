@@ -46,7 +46,6 @@
 typedef struct
 {
   unsigned int deviceIndex;
-  unsigned int screenViewport;
   unsigned int quality;
   unsigned int screenNoCompression;
   unsigned int updateInterval;
