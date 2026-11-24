@@ -22,7 +22,7 @@
 #include <pspgum.h>
 #include "common.h"
 #include "menu.h"
-#include "shared.h"
+#include "../shared.h"
 
 // Intrafont library
 #include <intraFont.h>

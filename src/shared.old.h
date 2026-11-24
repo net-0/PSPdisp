@@ -29,6 +29,10 @@
 
 #define PSPDISP_COM_HEADER_MAGIC 0xAFFE0600 // First value of every frame and response header, to recognize them
 
+#define PSPDISP_COM_MAX_FRAME_DATA_SIZE   (400 * 1024) // Max size in bytes of the data of a frame (after its header), the size of the PSP receive buffer
+#define PSPDISP_COM_AUDIO_CHUNK_2240_SIZE (2240 * 2)   // Size in bytes of an audio chunk with `PSPDISP_COM_FLAG_AUDIO_CHUNK_2240`
+#define PSPDISP_COM_AUDIO_CHUNK_2688_SIZE (2688 * 2)   // Size in bytes of an audio chunk with `PSPDISP_COM_FLAG_AUDIO_CHUNK_2688`
+
 #define PSPDISP_COM_MAX_DISPLAY_DEVICES 10 // Max display device names the PSP keeps (see `PSPdispComSettingsReceived.devices`)
 #define PSPDISP_COM_MAX_CONTROLS        20 // Max control file names the PSP keeps (see `PSPdispComSettingsReceived.controls`)
 #define PSPDISP_COM_MAX_PRESETS         20 // Max preset names the PSP keeps (see `PSPdispComSettingsReceived.presets`)

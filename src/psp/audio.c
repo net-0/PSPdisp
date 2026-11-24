@@ -100,9 +100,9 @@ void audioResetPlaybackBuffer()
   filling position, mute sound if so
   ---------------------------------------------------
 */
-void audioCheckIfResetIsNeeded(comFrameHeader* header)
+void audioCheckIfResetIsNeeded(PSPdispComFrameHeader* header)
 {
-  if (header->flags & COM_FLAGS_CONTAINS_AUDIO_DATA)
+  if (header->flags & PSPDISP_COM_FLAG_CONTAINS_AUDIO_DATA)
   {
     l_lastFrameContainedAudio = true;
   }
@@ -114,18 +114,18 @@ void audioCheckIfResetIsNeeded(comFrameHeader* header)
     l_lastFrameContainedAudio = false;
   }
 
-  if (l_lastFrameSampleRate != (header->flags & COM_FLAGS_AUDIO_SAMPLE_RATE_MASK))
+  if (l_lastFrameSampleRate != (header->flags & PSPDISP_COM_FLAG_AUDIO_SAMPLE_RATE_MASK))
   {
-    if (header->flags & COM_FLAGS_AUDIO_11025_HZ)
+    if (header->flags & PSPDISP_COM_FLAG_AUDIO_11025_HZ)
       l_currentSampleRate = 11025;
-    else if (header->flags & COM_FLAGS_AUDIO_22050_HZ)
+    else if (header->flags & PSPDISP_COM_FLAG_AUDIO_22050_HZ)
       l_currentSampleRate = 22050;
-    else if (header->flags & COM_FLAGS_AUDIO_44100_HZ)
+    else if (header->flags & PSPDISP_COM_FLAG_AUDIO_44100_HZ)
       l_currentSampleRate = 44100;
 
-    if (header->flags & COM_FLAGS_AUDIO_CHUNK_2240)
+    if (header->flags & PSPDISP_COM_FLAG_AUDIO_CHUNK_2240)
       l_currentChunkSize = 2240;
-    else if (header->flags & COM_FLAGS_AUDIO_CHUNK_2688)
+    else if (header->flags & PSPDISP_COM_FLAG_AUDIO_CHUNK_2688)
       l_currentChunkSize = 2688;
 
     g_audioCurrentFrameSize = 2 * l_currentChunkSize;
@@ -133,7 +133,7 @@ void audioCheckIfResetIsNeeded(comFrameHeader* header)
 
     audioTerm();
     audioInit();
-    l_lastFrameSampleRate = (header->flags & COM_FLAGS_AUDIO_SAMPLE_RATE_MASK);
+    l_lastFrameSampleRate = (header->flags & PSPDISP_COM_FLAG_AUDIO_SAMPLE_RATE_MASK);
   }
 }
 

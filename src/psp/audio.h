@@ -35,7 +35,7 @@ unsigned int g_audioCurrentBufferSize;
 
 void audioInit();
 void audioTerm();
-void audioCheckIfResetIsNeeded(comFrameHeader* header);
+void audioCheckIfResetIsNeeded(PSPdispComFrameHeader* header);
 void audioResetPlaybackBuffer();
 void audioPlaybackThread(SceSize args, void *argp);
 

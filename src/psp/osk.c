@@ -231,17 +231,17 @@ void oskCheckDanzeffState(SceCtrlData* ctrlData)
       {
         if ((l_danzeffPositionX == 0) && (l_danzeffPositionY == 0))
         {
-          l_danzeffPositionX = 480 - 150;
+          l_danzeffPositionX = PSPDISP_DISPLAY_WIDTH - 150;
         }
-        else if ((l_danzeffPositionX == 480 - 150) && (l_danzeffPositionY == 0))
+        else if ((l_danzeffPositionX == PSPDISP_DISPLAY_WIDTH - 150) && (l_danzeffPositionY == 0))
         {
-          l_danzeffPositionY = 272 - 150;
+          l_danzeffPositionY = PSPDISP_DISPLAY_HEIGHT - 150;
         }
-        else if ((l_danzeffPositionX == 480 - 150) && (l_danzeffPositionY == 272 - 150))
+        else if ((l_danzeffPositionX == PSPDISP_DISPLAY_WIDTH - 150) && (l_danzeffPositionY == PSPDISP_DISPLAY_HEIGHT - 150))
         {
           l_danzeffPositionX = 0;
         }
-        else if ((l_danzeffPositionX == 0) && (l_danzeffPositionY == 272 - 150))
+        else if ((l_danzeffPositionX == 0) && (l_danzeffPositionY == PSPDISP_DISPLAY_HEIGHT - 150))
         {
           l_danzeffPositionY = 0;
         }

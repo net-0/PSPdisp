@@ -15,6 +15,7 @@
 #include <pspsdk.h>
 #include <psptypes.h>
 #include <pspjpeg.h>
+#include <stdio.h> // IWYU pragma: keep
 #include <jpeglib.h>
 #include "common.h"
 #include "com.h"
@@ -29,7 +30,7 @@ void compressClearBuffers();
 void compressConvertBmp();
 void compressTermJpegDecoding();
 int compressInitJpegDecoding();
-void compressDecompressJpeg(comFrameHeader* frameHeader);
+void compressDecompressJpeg(PSPdispComFrameHeader* frameHeader);
 void compressDecodingAndDrawingThread(SceSize args, void *argp);
 void compressSwitchTargetBuffer();
 

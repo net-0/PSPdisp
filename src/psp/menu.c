@@ -79,14 +79,31 @@ alignas(16) unsigned char glyphBattery3[] = {
 char* optionsYesNo[] = {"NO", "YES"};
 char* optionsOnOff[] = {"OFF", "ON"};
 char* optionsUsbMode[] = {"libusb (PSP Type B)", "WinUSB (PSP Type C)"};
-char* optionsClockSpeed[] = {"Default", "33 Mhz", "66 Mhz", "111 Mhz", "222 Mhz", "333 Mhz"}; 
+char* optionsClockSpeed[] = {"Default", "33 Mhz", "66 Mhz", "111 Mhz", "222 Mhz", "333 Mhz"};
 char* optionsBrightness[] = {"OFF", "Lower brightness", "Turn off backlight"};
 char* optionsAutostart[] = {"OFF", "Use WLAN", "Use USB"};
 char* optionsOkCancelButton[] = {"System default", "X = OK and O = Cancel", "O = OK and X = Cancel"};
-char* optionsQuality[] = {"Lowest", "Low", "Medium", "High", "Highest"};
-char* optionsInterval[] = {"Continuous", "Shortest", "Short", "Medium", "Long", "Longest"};
+char* optionsQuality[] = {
+  [PSPDISP_COM_QUALITY_LOWEST] = "Lowest",
+  [PSPDISP_COM_QUALITY_LOW] = "Low",
+  [PSPDISP_COM_QUALITY_MEDIUM] = "Medium",
+  [PSPDISP_COM_QUALITY_HIGH] = "High",
+  [PSPDISP_COM_QUALITY_HIGHEST] = "Highest"
+};
+char* optionsInterval[] = {
+  [PSPDISP_COM_UPDATE_INTERVAL_CONTINUOUS] = "Continuous",
+  [PSPDISP_COM_UPDATE_INTERVAL_SHORTEST] = "Shortest",
+  [PSPDISP_COM_UPDATE_INTERVAL_SHORT] = "Short",
+  [PSPDISP_COM_UPDATE_INTERVAL_MEDIUM] = "Medium",
+  [PSPDISP_COM_UPDATE_INTERVAL_LONG] = "Long",
+  [PSPDISP_COM_UPDATE_INTERVAL_LONGEST] = "Longest"
+};
 char* optionsTimeFormat[] = {"System default", "12 hour", "24 hour"};
-char* optionsSampleRate[] = {"11025 Hz", "22050 Hz", "44100 Hz"};
+char* optionsSampleRate[] = {
+  [PSPDISP_COM_SAMPLE_RATE_11025] = "11025 Hz",
+  [PSPDISP_COM_SAMPLE_RATE_22050] = "22050 Hz",
+  [PSPDISP_COM_SAMPLE_RATE_44100] = "44100 Hz"
+};
 
 
 // Menuentry additional units
@@ -95,8 +112,7 @@ char* unitPercent[] = {" %"};
 
 
 // Main menu
-menuEntry mainMenuSettings[] =
-{
+menuEntry mainMenuSettings[] = {
   { MENU_MAIN, "Start using USB mode", NULL, 0, 0, 0, 0, TYPE_BUTTON, NULL, MENU_INPUT_CLICK, menuStartUsbModeCallback },
   { MENU_MAIN, "Start using WLAN mode", NULL, 0, 0, 0, 0, TYPE_BUTTON, NULL, MENU_INPUT_CLICK, menuStartWlanModeCallback },
   { MENU_MAIN, "Change Settings", NULL, 0, 0, 0, 0, TYPE_BUTTON, NULL, MENU_INPUT_CLICK, menuSettingsCallback },
@@ -105,8 +121,7 @@ menuEntry mainMenuSettings[] =
 
 
 // "Ingame" menu (while a communication mode is selected)
-menuEntry inGameMenuSettings[] =
-{
+menuEntry inGameMenuSettings[] = {
   { MENU_INGAME, "Resume", NULL, 0, 0, 0, 0, TYPE_BUTTON, NULL, MENU_INPUT_CLICK, menuResumeCallback },
   { MENU_INGAME, "Toggle Onscreen Keyboard", NULL, 0, 0, 0, 0, TYPE_BUTTON, NULL, MENU_INPUT_CLICK, menuKeyboardCallback },
   { MENU_INGAME, "Change Settings", NULL, 0, 0, 0, 0, TYPE_BUTTON, NULL, MENU_INPUT_CLICK, menuSettingsCallback },
@@ -116,8 +131,7 @@ menuEntry inGameMenuSettings[] =
 
 
 // General settings
-menuEntry generalSettings[] =
-{
+menuEntry generalSettings[] = {
   { MENU_GENERAL, "Display brightness", &configBrightness, 100, 4, 100, 4, TYPE_INTEGER_WITH_UNIT, unitPercent, MENU_INPUT_LR_SELECT, menuBrightnessCallback },
   { MENU_GENERAL, "Set brightness on startup", &configAutosetBrightness, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, NULL },
   { MENU_GENERAL, "Button configuration", &configXOButtons, 0, 0, 2, 1, TYPE_INTEGER, NULL, MENU_INPUT_LR_SELECT, menuButtonConfigurationCallback },
@@ -128,16 +142,14 @@ menuEntry generalSettings[] =
 
 
 // USB menu
-menuEntry usbSettings[] =
-{
+menuEntry usbSettings[] = {
   { MENU_USB, "Clock speed", &configUsbClockSpeed, 0, 0, 5, 1, TYPE_INTEGER_NAMED, optionsClockSpeed, MENU_INPUT_LR_SELECT, menuChangeCpu },
   { MENU_USB, "USB driver", &configUsbMode, 1, 0, 1, 1, TYPE_INTEGER_NAMED, optionsUsbMode, MENU_INPUT_LR_SELECT, NULL }
 };
 
 
 // USB Power save menu
-menuEntry usbPowerSaveSettings[] =
-{
+menuEntry usbPowerSaveSettings[] = {
   { MENU_USB_POWER_SAVING, "Enable power saving", &configUsbSave, 1, 0, 1, 1, TYPE_INTEGER_NAMED, optionsYesNo, MENU_INPUT_LR_SELECT, NULL },
   { MENU_USB_POWER_SAVING, "Idle timeout", &configUsbSaveTimeout, 5, 2, 3600, 1, TYPE_INTEGER_WITH_UNIT, unitSeconds, MENU_INPUT_LR_SELECT | MENU_INPUT_OSK, NULL },
   { MENU_USB_POWER_SAVING, "Reduce brightness", &configUsbSaveScreenBacklight, 1, 0, 2, 1, TYPE_INTEGER_NAMED, optionsBrightness, MENU_INPUT_LR_SELECT, NULL },
@@ -147,8 +159,7 @@ menuEntry usbPowerSaveSettings[] =
 
 
 // WLAN menu
-menuEntry wlanSettings[] = 
-{
+menuEntry wlanSettings[] = {
   { MENU_WLAN, "Clock speed", &configWlanClockSpeed, 0, 0, 5, 1, TYPE_INTEGER_NAMED, optionsClockSpeed, MENU_INPUT_LR_SELECT, menuChangeCpu },
   { MENU_WLAN, "Password", NULL, 0, 0, 30, 0, TYPE_STRING, (char**)configWlanPassword, MENU_INPUT_OSK, menuPasswordCallback },
   { MENU_WLAN, "LED indicator", &configWlanLedEnabled, 1, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuToggleWlanLed }
@@ -156,8 +167,7 @@ menuEntry wlanSettings[] =
 
 
 // WLAN IP address menu
-menuEntry wlanIPSettings[] =
-{
+menuEntry wlanIPSettings[] = {
   { MENU_WLAN_IP, "Number to use", &configIpAddressIndex, 1, 1, 5, 1, TYPE_INTEGER, NULL, MENU_INPUT_LR_SELECT, NULL },
   { MENU_WLAN_IP, "Host IP address 1", NULL, 0, 0, 32, 0, TYPE_STRING, (char**)&configIpAddresses[0], MENU_INPUT_OSK, menuIpAddressCallback },
   { MENU_WLAN_IP, "Host IP address 2", NULL, 0, 0, 32, 0, TYPE_STRING, (char**)&configIpAddresses[1], MENU_INPUT_OSK, menuIpAddressCallback },
@@ -169,8 +179,7 @@ menuEntry wlanIPSettings[] =
 
 
 // WLAN Wake-On-Lan menu
-menuEntry wlanWakeOnLanSettings[] =
-{
+menuEntry wlanWakeOnLanSettings[] = {
   { MENU_WLAN_IP, "Use Wake-On-Lan", &configWlanWakeOnLanEnabled, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, NULL },
   { MENU_WLAN_IP, "Host MAC address 1", NULL, 0, 0, 17, 0, TYPE_STRING, (char**)&configMacAddresses[0], MENU_INPUT_OSK, menuMacAddressCallback },
   { MENU_WLAN_IP, "Host MAC address 2", NULL, 0, 0, 17, 0, TYPE_STRING, (char**)&configMacAddresses[1], MENU_INPUT_OSK, menuMacAddressCallback },
@@ -182,38 +191,34 @@ menuEntry wlanWakeOnLanSettings[] =
 
 
 // Autostart menu
-menuEntry autoStartSettings[] = 
-{
+menuEntry autoStartSettings[] = {
   { MENU_AUTOSTART, "Autoselect mode on startup", &configAutoMode, 0, 0, 2, 1, TYPE_INTEGER_NAMED, optionsAutostart, MENU_INPUT_LR_SELECT, NULL },
   { MENU_AUTOSTART, "Timeout before autoselect", &configAutoTimeout, 10, 0, 3600, 1, TYPE_INTEGER_WITH_UNIT, unitSeconds, MENU_INPUT_LR_SELECT | MENU_INPUT_OSK, NULL }
 };
 
 
 // PC settings - Screen
-menuEntry pcSettingsScreen[] =
-{
-  { MENU_PC_SCREEN, "Quality", (int*)&configPCSettings.settings.quality, 2, 0, 4, 1, TYPE_INTEGER_NAMED, optionsQuality, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
-  { MENU_PC_SCREEN, "No compression", (int*)&configPCSettings.settings.screenNoCompression, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
-  { MENU_PC_SCREEN, "Update interval", (int*)&configPCSettings.settings.updateInterval, 0, 0, 5, 1, TYPE_INTEGER_NAMED, optionsInterval, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback }
+menuEntry pcSettingsScreen[] = {
+  { MENU_PC_SCREEN, "Quality", (int*)&configPCSettings.settings.quality, PSPDISP_COM_QUALITY_MEDIUM, PSPDISP_COM_QUALITY_LOWEST, PSPDISP_COM_QUALITY_HIGHEST, 1, TYPE_INTEGER_NAMED, optionsQuality, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
+  { MENU_PC_SCREEN, "No compression", (int*)&configPCSettings.settings.screen_no_compression, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
+  { MENU_PC_SCREEN, "Update interval", (int*)&configPCSettings.settings.update_interval, PSPDISP_COM_UPDATE_INTERVAL_CONTINUOUS, PSPDISP_COM_UPDATE_INTERVAL_CONTINUOUS, PSPDISP_COM_UPDATE_INTERVAL_LONGEST, 1, TYPE_INTEGER_NAMED, optionsInterval, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback }
 };
 
 
 // PC settings - Display
-menuEntry pcSettingsDisplay[] =
-{
-  { MENU_PC_DISPLAY, "Display streaming", (int*)&configPCSettings.settings.displayEnable, 1, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
-  { MENU_PC_DISPLAY, "Display device", (int*)&configPCSettings.settings.displayDeviceIndex, 0, 0, 1, 1, TYPE_INTEGER_NAMED, NULL, MENU_INPUT_LR_SELECT, menuPcSettingsDeviceCallback },
-  { MENU_PC_DISPLAY, "Autoselect display", (int*)&configPCSettings.settings.displayAutoselect, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback }
+menuEntry pcSettingsDisplay[] = {
+  { MENU_PC_DISPLAY, "Display streaming", (int*)&configPCSettings.settings.display_enable, 1, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
+  { MENU_PC_DISPLAY, "Display device", (int*)&configPCSettings.settings.display_device_index, 0, 0, 1, 1, TYPE_INTEGER_NAMED, NULL, MENU_INPUT_LR_SELECT, menuPcSettingsDeviceCallback },
+  { MENU_PC_DISPLAY, "Autoselect display", (int*)&configPCSettings.settings.display_autoselect, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback }
 };
 
 
 // PC settings - Misc
-menuEntry pcSettingsMisc[] =
-{
-  { MENU_PC_MISC, "Sound Streaming", (int*)&configPCSettings.settings.soundEnabled, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
-  { MENU_PC_MISC, "Samplerate", (int*)&configPCSettings.settings.soundSampleRate, 0, 0, 2, 1, TYPE_INTEGER_NAMED, optionsSampleRate, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
-  { MENU_PC_MISC, "Control file", (int*)&configPCSettings.settings.controlIndex, 0, 0, 1, 1, TYPE_INTEGER_NAMED, NULL, MENU_INPUT_LR_SELECT, menuPcSettingsControlCallback },
-  { MENU_PC_MISC, "Preset", (int*)&configPCSettings.settings.presetIndex, 0, 0, 1, 1, TYPE_INTEGER_NAMED, NULL, MENU_INPUT_LR_SELECT | MENU_INPUT_CLICK, menuPcSettingsPresetCallback }
+menuEntry pcSettingsMisc[] = {
+  { MENU_PC_MISC, "Sound Streaming", (int*)&configPCSettings.settings.sound_enabled, 0, 0, 1, 1, TYPE_INTEGER_NAMED, optionsOnOff, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
+  { MENU_PC_MISC, "Samplerate", (int*)&configPCSettings.settings.sound_sample_rate, PSPDISP_COM_SAMPLE_RATE_11025, PSPDISP_COM_SAMPLE_RATE_11025, PSPDISP_COM_SAMPLE_RATE_44100, 1, TYPE_INTEGER_NAMED, optionsSampleRate, MENU_INPUT_LR_SELECT, menuPcSettingsChangeCallback },
+  { MENU_PC_MISC, "Control file", (int*)&configPCSettings.settings.control_index, 0, 0, 1, 1, TYPE_INTEGER_NAMED, NULL, MENU_INPUT_LR_SELECT, menuPcSettingsControlCallback },
+  { MENU_PC_MISC, "Preset", (int*)&configPCSettings.settings.preset_index, 0, 0, 1, 1, TYPE_INTEGER_NAMED, NULL, MENU_INPUT_LR_SELECT | MENU_INPUT_CLICK, menuPcSettingsPresetCallback }
 };
 
 
@@ -294,7 +299,7 @@ void drawMenu(menuProperties* menuProperty, int selectionIndex)
   // seems to occur AFTER the text is drawn, therefore you can
   // briefly see the text being drawn over the old one and then
   // a blank background after the frame switch.
-  // Also, this only occured when changing a value with the 
+  // Also, this only occured when changing a value with the
   // DPAD.
   sceKernelDcacheWritebackAll();
 
@@ -307,7 +312,7 @@ void drawMenu(menuProperties* menuProperty, int selectionIndex)
 
     drawCaption(menuProperty, selectionIndex);
 
-    int i; 
+    int i;
     for (i = 0; i < menuProperty->entryCount; i++)
     {
       drawOption(menuProperty, i, selectionIndex);
@@ -354,7 +359,7 @@ void drawCaption(menuProperties* menuProperty, int selectionIndex)
       x = 0;
 
     intraFontSetStyle(sansSerifLarge, 1.0f, color, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, 0);
-    intraFontPrint(sansSerifLarge, 10 + x, 20, menuProperty->caption); 
+    intraFontPrint(sansSerifLarge, 10 + x, 20, menuProperty->caption);
   }
 
   intraFontSetStyle(sansSerifSmall, 1.0f, MENU_COLOR_CAPTION, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_RIGHT);
@@ -380,7 +385,7 @@ void drawCaption(menuProperties* menuProperty, int selectionIndex)
     }
 
     // Draw battery
-    if (battery < 25)      
+    if (battery < 25)
       drawGlyph(MENU_GLYPH_BATTERY0, 460 - batteryOffset, 7);
     else if (battery < 50)
       drawGlyph(MENU_GLYPH_BATTERY1, 460 - batteryOffset, 7);
@@ -437,7 +442,7 @@ void drawOption(menuProperties* menuProperty, int optionIndex, int selectionInde
 
     if (optionIndex > selectionIndex)
       return;
-    
+
     offsetY = optionIndex - (selectionIndex - MENU_MAX_OPTIONS_ON_SCREEN);
   }
   else if (optionIndex > MENU_MAX_OPTIONS_ON_SCREEN)
@@ -473,7 +478,7 @@ void drawOption(menuProperties* menuProperty, int optionIndex, int selectionInde
   {
     // Custom drawing for this item is enabled
     menuCallbackDrawStruct callbackStruct;
-    callbackStruct.x = 480 - MENU_OFFSET_OPTION_X;
+    callbackStruct.x = PSPDISP_DISPLAY_WIDTH - MENU_OFFSET_OPTION_X;
     callbackStruct.y = MENU_OFFSET_OPTION_Y + offsetY;
     callbackStruct.processed = false;
     callbackStruct.menuOption = &(menuProperty->menuEntries[optionIndex]);
@@ -487,21 +492,21 @@ void drawOption(menuProperties* menuProperty, int optionIndex, int selectionInde
   switch (menuProperty->menuEntries[optionIndex].settingType)
   {
     case TYPE_INTEGER:
-      intraFontPrintf(sansSerifSmall, 480 - MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, "%d", *menuProperty->menuEntries[optionIndex].value);
+      intraFontPrintf(sansSerifSmall, PSPDISP_DISPLAY_WIDTH - MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, "%d", *menuProperty->menuEntries[optionIndex].value);
       break;
     case TYPE_INTEGER_WITH_UNIT:
       value = menuProperty->menuEntries[optionIndex].valueArray[0];
-      intraFontPrintf(sansSerifSmall, 480 - MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, "%d%s", *menuProperty->menuEntries[optionIndex].value, value);
+      intraFontPrintf(sansSerifSmall, PSPDISP_DISPLAY_WIDTH - MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, "%d%s", *menuProperty->menuEntries[optionIndex].value, value);
       break;
     case TYPE_INTEGER_NAMED:
       value = menuProperty->menuEntries[optionIndex].valueArray[*menuProperty->menuEntries[optionIndex].value];
-      intraFontPrint(sansSerifSmall, 480 - MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, value);
+      intraFontPrint(sansSerifSmall, PSPDISP_DISPLAY_WIDTH - MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, value);
       break;
     case TYPE_STRING:
-      intraFontPrint(sansSerifSmall, 480 - MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, (const char*)menuProperty->menuEntries[optionIndex].valueArray);
+      intraFontPrint(sansSerifSmall, PSPDISP_DISPLAY_WIDTH - MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, (const char*)menuProperty->menuEntries[optionIndex].valueArray);
       break;
     case TYPE_STRING_SELECTION:
-      intraFontPrint(sansSerifSmall, 480 - MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, menuProperty->menuEntries[optionIndex].valueArray[*menuProperty->menuEntries[optionIndex].value]);
+      intraFontPrint(sansSerifSmall, PSPDISP_DISPLAY_WIDTH - MENU_OFFSET_OPTION_X, MENU_OFFSET_OPTION_Y + offsetY, menuProperty->menuEntries[optionIndex].valueArray[*menuProperty->menuEntries[optionIndex].value]);
       break;
   }
 }
@@ -577,7 +582,7 @@ void drawStatus(menuProperties* menuProperty, int selectionIndex)
     if (l_okButton == PSP_CTRL_CROSS)
       drawGlyph(MENU_GLYPH_CIRCLE, 470 - 20 - offsetX, 248);
     else
-      drawGlyph(MENU_GLYPH_CROSS, 470 - 20 - offsetX, 248);    
+      drawGlyph(MENU_GLYPH_CROSS, 470 - 20 - offsetX, 248);
   }
 }
 
@@ -902,8 +907,7 @@ int menuLoop(int startMenuId)
         {
           int callbackResult = menuOption->callback(CALLBACK_BUTTON_PRESSED, (void*)menuOption);
 
-          // Refresh the button buffer to avoid the "back" button propagating through the 
-          // menu hirarchy
+          // Refresh the button buffer to avoid the "back" button propagating through the menu hirarchy
           utilsCtrlReadBufferPositive(&controlData, 1);
           previousButtons = controlData.Buttons;
           repeatCount = 0;
@@ -1079,12 +1083,12 @@ int menuDrawAutostartScreen()
     if (l_okButton == PSP_CTRL_CROSS)
       drawGlyph(MENU_GLYPH_CIRCLE, 470 - 20 - offsetX, 248);
     else
-      drawGlyph(MENU_GLYPH_CROSS, 470 - 20 - offsetX, 248);    
+      drawGlyph(MENU_GLYPH_CROSS, 470 - 20 - offsetX, 248);
 
     graphicFinishDrawing(true);
 
     SceCtrlData controlData;
-    sceCtrlReadBufferPositive(&controlData, 1); 
+    sceCtrlReadBufferPositive(&controlData, 1);
 
     if (controlData.Buttons & l_cancelButton)
       return MAIN_STATE_MENU;
@@ -1398,7 +1402,7 @@ int menuPcSettingsPresetCallback(int reason, void* data)
   if (reason == CALLBACK_BUTTON_PRESSED)
   {
     g_comUpdateSettings = true;
-    configPCSettings.settings.presetDoSet = 1;
+    configPCSettings.settings.preset_do_set = 1;
   }
   else if (reason == CALLBACK_DRAW)
   {

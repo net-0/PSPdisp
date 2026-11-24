@@ -154,19 +154,19 @@ void powerInit()
   {
     switch (kernelGetModel())
     {
-      case 2: // 3000 03g
-      case 3: // 3000 04g
-      case 6: // 3000 07g
-      case 8: // 3000 09g
+      case PSPDISP_MODEL_03G:
+      case PSPDISP_MODEL_04G:
+      case PSPDISP_MODEL_07G:
+      case PSPDISP_MODEL_09G:
         l_loweredBrightness = 16;
         break;
 
-      case 4: // GO
+      case PSPDISP_MODEL_05G:
         l_loweredBrightness = 24;
         break;
 
-      case 0: // 1000
-      case 1: // 2000
+      case PSPDISP_MODEL_01G:
+      case PSPDISP_MODEL_02G:
       default:
         l_loweredBrightness = 8;
         break;

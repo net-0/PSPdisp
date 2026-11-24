@@ -19,7 +19,7 @@
 #define PSPDISP_DISPLAY_WIDTH               480 // The PSP display width in pixels
 #define PSPDISP_DISPLAY_HEIGHT              272 // The PSP display height in pixels
 #define PSPDISP_DISPLAY_FREQUENCY            60 // The PSP display refresh rate in hertz
-#define PSPDISP_DISPLAY_FRAME_BUFFER_STRIBE 512 // The PSP display frame-buffer pixels per row in memory
+#define PSPDISP_DISPLAY_FRAME_BUFFER_STRIDE 512 // The PSP display frame-buffer pixels per row in memory
 
 // All the types of this file are packed and little-endian whatever the host, so the PSP and the desktop share the same layout.
 // Both pragmas are reset at the end of this file, so they don't leak into the files that include it.
