@@ -18,11 +18,10 @@
 #include "wlan.h"
 #include "usb/usb.h"
 #include "audio.h"
-#include "shared.h"
+#include "../shared.h"
 
 
-#define COM_IMAGE_BUFFER_SIZE (400 * 1024)
-#define COM_AUDIO_BUFFER_SIZE (20 * 2688)
+#define COM_AUDIO_BUFFER_SIZE (10 * PSPDISP_COM_AUDIO_CHUNK_2688_SIZE) // 10 audio chunks of the biggest size, the most `g_audioCurrentBufferSize` gets
 
 #define COM_MODE_NONE -1
 #define COM_MODE_USB 0
@@ -30,7 +29,7 @@
 
 
 int g_comMode;
-unsigned char g_comImageReceiveBuffer[COM_IMAGE_BUFFER_SIZE];
+unsigned char g_comImageReceiveBuffer[PSPDISP_COM_MAX_FRAME_DATA_SIZE];
 unsigned char g_comAudioReceiveBuffer[COM_AUDIO_BUFFER_SIZE];
 
 int g_comAudioWritePosition;
@@ -42,11 +41,11 @@ bool g_comUpdateSettings;
 bool g_comForceScreenUpdate;
 
 
-bool readFrameInformation(comFrameHeader* frameHeader);
+bool readFrameInformation(PSPdispComFrameHeader* frameHeader);
 void comLoop();
 int readData(void* buffer, int length);
 bool readDataLarge(void* buffer, int length);
-bool readFrame(comFrameHeader* frameHeader, unsigned char* soundData, comSettingsReceived* settingsData);
+bool readFrame(PSPdispComFrameHeader* frameHeader, unsigned char* soundData, PSPdispComSettingsReceived* settingsData);
 bool sendResponse();
 
 

@@ -36,9 +36,8 @@
 #include "./state.c"
 
 #define PSPDISP_DAEMON_SESSION_READ_TIMEOUT 2000 // Time to wait for a response of the PSP, in milliseconds
-#define PSPDISP_DAEMON_SESSION_DATA_CAPACITY (400 * 1024) // Max size of the data of a frame, the size of the PSP receive buffer (`COM_IMAGE_BUFFER_SIZE` of the PSP app)
 
-static_assert(PSPDISP_DAEMON_IMAGE_UNCOMPRESSED_SIZE + 2688 * 2 + sizeof(PSPdispComSettings) + PSPDISP_COM_NAME_SIZE * (PSPDISP_COM_MAX_DISPLAY_DEVICES + PSPDISP_COM_MAX_CONTROLS + PSPDISP_COM_MAX_PRESETS) <= PSPDISP_DAEMON_SESSION_DATA_CAPACITY, "The biggest frame data must fit the PSP receive buffer");
+static_assert(PSPDISP_DAEMON_IMAGE_UNCOMPRESSED_SIZE + PSPDISP_COM_AUDIO_CHUNK_2688_SIZE + sizeof(PSPdispComSettings) + PSPDISP_COM_NAME_SIZE * (PSPDISP_COM_MAX_DISPLAY_DEVICES + PSPDISP_COM_MAX_CONTROLS + PSPDISP_COM_MAX_PRESETS) <= PSPDISP_COM_MAX_FRAME_DATA_SIZE, "The biggest frame data must fit the PSP receive buffer");
 
 /**
  * @brief Link to the PSP, the transport of the session (USB or WLAN).
@@ -92,7 +91,7 @@ typedef struct {
 	uint64_t frame_count; // Count of `frame`, from the media
 	uint32_t frame[PSPDISP_DISPLAY_WIDTH * PSPDISP_DISPLAY_HEIGHT]; // The latest frame of the virtual display
 	PSPdispDaemonImage *image; // Encoder of the images
-	uint8_t data[PSPDISP_DAEMON_SESSION_DATA_CAPACITY]; // Data of the frame being sent: the image, the audio chunk, then the communication settings
+	uint8_t data[PSPDISP_COM_MAX_FRAME_DATA_SIZE]; // Data of the frame being sent: the image, the audio chunk, then the communication settings
 } PSPdispDaemonSession;
 
 /**
@@ -109,15 +108,15 @@ uint32_t pspdisp_daemon_session_chunk_size(PSPdispComSampleRate sample_rate, uin
 		case PSPDISP_COM_SAMPLE_RATE_11025:
 			if (flags != NULL)
 				*flags |= PSPDISP_COM_FLAG_AUDIO_11025_HZ | PSPDISP_COM_FLAG_AUDIO_CHUNK_2240;
-			return 2240 * 2;
+			return PSPDISP_COM_AUDIO_CHUNK_2240_SIZE;
 		case PSPDISP_COM_SAMPLE_RATE_44100:
 			if (flags != NULL)
 				*flags |= PSPDISP_COM_FLAG_AUDIO_44100_HZ | PSPDISP_COM_FLAG_AUDIO_CHUNK_2688;
-			return 2688 * 2;
+			return PSPDISP_COM_AUDIO_CHUNK_2688_SIZE;
 		default:
 			if (flags != NULL)
 				*flags |= PSPDISP_COM_FLAG_AUDIO_22050_HZ | PSPDISP_COM_FLAG_AUDIO_CHUNK_2240;
-			return 2240 * 2;
+			return PSPDISP_COM_AUDIO_CHUNK_2240_SIZE;
 	}
 }
 

@@ -19,8 +19,8 @@ bool l_sceJpegAvailable = false; // For libjpeg fallback
 bool l_buffersCleared = false; // Avoid clearing the buffers if they are already empty
 SceUID l_jpegModuleId;
 
-unsigned char __attribute__((aligned(16))) l_pixelBuffer_1[480 * 272 * 4];
-unsigned char __attribute__((aligned(16))) l_pixelBuffer_2[480 * 272 * 4];
+unsigned char __attribute__((aligned(16))) l_pixelBuffer_1[PSPDISP_DISPLAY_WIDTH * PSPDISP_DISPLAY_HEIGHT * 4];
+unsigned char __attribute__((aligned(16))) l_pixelBuffer_2[PSPDISP_DISPLAY_WIDTH * PSPDISP_DISPLAY_HEIGHT * 4];
 
 
 // libjpeg types and variables
@@ -37,7 +37,7 @@ typedef struct
   unsigned char* outputBuffer;
   unsigned int bufferPosition;
   unsigned int bufferSize;
-} 
+}
 libjpegSourceManager;
 
 struct jpeg_decompress_struct l_libjpegCinfo;
@@ -58,7 +58,7 @@ void compressInit()
   compressInitJpegDecoding();
 
   // Create decompression thread
-  g_compressThreadId = sceKernelCreateThread("compressThread", (SceKernelThreadEntry)compressDecodingAndDrawingThread, 0x18, 0x10000, PSP_THREAD_ATTR_USER, 0);    
+  g_compressThreadId = sceKernelCreateThread("compressThread", (SceKernelThreadEntry)compressDecodingAndDrawingThread, 0x18, 0x10000, PSP_THREAD_ATTR_USER, 0);
 }
 
 
@@ -94,8 +94,8 @@ void compressClearBuffers()
 
   g_pixelBuffer = l_pixelBuffer_1;
 
-  memset(l_pixelBuffer_1, 0, 480 * 272 * 4);
-  memset(l_pixelBuffer_2, 0, 480 * 272 * 4);
+  memset(l_pixelBuffer_1, 0, sizeof(l_pixelBuffer_1));
+  memset(l_pixelBuffer_2, 0, sizeof(l_pixelBuffer_2));
 
   l_buffersCleared = true;
 }
@@ -110,7 +110,7 @@ void compressClearBuffers()
   ---------------------------------------------------
   Returns 0 on success, a negative value on error.
 */
-int compressInitJpegDecoding() 
+int compressInitJpegDecoding()
 {
   int code = -1;
 
@@ -119,16 +119,16 @@ int compressInitJpegDecoding()
   if (l_jpegModuleId < 0)
   {
     // Try loading the module directly
-    l_jpegModuleId = utilsLoadStartModule("flash0:/kd/avcodec.prx");  
+    l_jpegModuleId = utilsLoadStartModule("flash0:/kd/avcodec.prx");
   }
 
   if (l_jpegModuleId > -1)
   {
     code = -2;
-    if (sceJpegInitMJpeg() == 0) 
+    if (sceJpegInitMJpeg() == 0)
     {
       code = -3;
-      if (sceJpegCreateMJpeg(480, 272) == 0) 
+      if (sceJpegCreateMJpeg(PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT) == 0)
       {
         // Success!
         l_sceJpegAvailable = true;
@@ -207,15 +207,15 @@ void compressConvertBmp()
   // Bloat the 24 Bit values to 32 Bit
   // Windows Bitmaps are in BGR order and upside down
 
-  unsigned int imageWidth = 480;
-  unsigned int imageHeight = 272;
+  const unsigned int imageWidth = PSPDISP_DISPLAY_WIDTH;
+  const unsigned int imageHeight = PSPDISP_DISPLAY_HEIGHT;
 
   unsigned char* pixelsBackup = (unsigned char*)g_pixelBuffer;
   unsigned char* dataBackup = g_comImageReceiveBuffer;
 
   unsigned char* inPixels;
   unsigned char* outPixels;
-  
+
   int i, j;
 
   for (i = imageHeight - 1; i >= 0; i--)
@@ -234,23 +234,6 @@ void compressConvertBmp()
     }
   }
 
-/*
-  unsigned char* inPixels = &g_comImageReceiveBuffer[0] + 1;
-  unsigned char* outPixels = (unsigned char*)g_pixelBuffer + 1;
-
-  int i = 0;
-  while (i < 480 * 272)
-  {
-    *(outPixels - 1) = *(inPixels + 1);
-    *(outPixels + 1) = *(inPixels - 1);
-    *(outPixels) = *(inPixels);
-
-    outPixels += 4;
-    inPixels += 3;
-    i++;
-  }
-*/
-
   sceKernelDcacheWritebackInvalidateAll();
 }
 
@@ -264,12 +247,12 @@ void compressConvertBmp()
   Decompress a Jpeg frame.
   ---------------------------------------------------
 */
-void compressDecompressJpeg(comFrameHeader* frameHeader)
+void compressDecompressJpeg(PSPdispComFrameHeader* frameHeader)
 {
   if (l_sceJpegAvailable)
   {
     // Use sceJpeg* functions
-    sceJpegDecodeMJpeg(&g_comImageReceiveBuffer[0], frameHeader->imageSize, g_pixelBuffer, 0);
+    sceJpegDecodeMJpeg(&g_comImageReceiveBuffer[0], frameHeader->image_size, g_pixelBuffer, 0);
   }
   else
   {
@@ -278,7 +261,7 @@ void compressDecompressJpeg(comFrameHeader* frameHeader)
     source->buffer = &g_comImageReceiveBuffer[0];
     source->outputBuffer = g_pixelBuffer;
     source->bufferPosition = 0;
-    source->bufferSize = frameHeader->imageSize;
+    source->bufferSize = frameHeader->image_size;
 
     // Point the buffer to the whole file in memory
     source->sourceManager.bytes_in_buffer = source->bufferSize;
@@ -320,9 +303,9 @@ void compressDecompressJpeg(comFrameHeader* frameHeader)
 */
 void compressDecodingAndDrawingThread(SceSize args, void *argp)
 {
-  comFrameHeader* frameHeader = (comFrameHeader*)argp;
+  PSPdispComFrameHeader* frameHeader = (PSPdispComFrameHeader*)argp;
 
-  if (frameHeader->flags & COM_FLAGS_IMAGE_CLEAR_SCREEN)
+  if (frameHeader->flags & PSPDISP_COM_FLAG_IMAGE_CLEAR_SCREEN)
   {
     compressClearBuffers();
 
@@ -336,11 +319,11 @@ void compressDecodingAndDrawingThread(SceSize args, void *argp)
     compressSwitchTargetBuffer();
 
     // Decode jpeg
-    if (frameHeader->flags & COM_FLAGS_IMAGE_IS_UNCOMPRESSED)
+    if (frameHeader->flags & PSPDISP_COM_FLAG_IMAGE_IS_UNCOMPRESSED)
     {
       compressConvertBmp();
     }
-    else if (frameHeader->flags & COM_FLAGS_IMAGE_IS_JPEG)
+    else if (frameHeader->flags & PSPDISP_COM_FLAG_IMAGE_IS_JPEG)
     {
       compressDecompressJpeg(frameHeader);
     }
@@ -354,7 +337,7 @@ void compressDecodingAndDrawingThread(SceSize args, void *argp)
     return;
 
   // Draw danzeff keyboard on top of the frame
-  g_oskDanzeffOpenOnSelect = (frameHeader->flags & COM_FLAGS_ENABLE_OSK);
+  g_oskDanzeffOpenOnSelect = (frameHeader->flags & PSPDISP_COM_FLAG_ENABLE_OSK);
   if (g_oskDanzeffActive)
     graphicDrawDanzeff();
 

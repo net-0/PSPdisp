@@ -15,12 +15,7 @@
 #include "msgdlg.h"
 
 
-#define BUF_WIDTH (512)
-#define SCR_WIDTH (480)
-#define SCR_HEIGHT (272)
 #define PIXEL_SIZE (4)
-#define FRAME_SIZE (BUF_WIDTH * SCR_HEIGHT * PIXEL_SIZE)
-#define ZBUF_SIZE (BUF_WIDTH * SCR_HEIGHT * 2)
 
 
 #define GRAPHIC_BACKGROUND_COLOR RGBA_TO_ABGR(0x304065D0)
@@ -48,13 +43,13 @@ void graphicInit()
   sceGuInit();
 
   sceGuStart(GU_DIRECT, list);
-  sceGuDrawBuffer(GU_PSM_8888, (void*)0, BUF_WIDTH);
-  sceGuDispBuffer(SCR_WIDTH, SCR_HEIGHT, (void*)(BUF_WIDTH * SCR_HEIGHT * PIXEL_SIZE), BUF_WIDTH);
-  sceGuDepthBuffer((void*)0x110000, BUF_WIDTH);
-  sceGuOffset(2048 - (SCR_WIDTH / 2), 2048 - (SCR_HEIGHT / 2));
-  sceGuViewport(2048, 2048, SCR_WIDTH, SCR_HEIGHT);
+  sceGuDrawBuffer(GU_PSM_8888, (void*)0, PSPDISP_DISPLAY_FRAME_BUFFER_STRIDE);
+  sceGuDispBuffer(PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT, (void*)(PSPDISP_DISPLAY_FRAME_BUFFER_STRIDE * PSPDISP_DISPLAY_HEIGHT * PIXEL_SIZE), PSPDISP_DISPLAY_FRAME_BUFFER_STRIDE);
+  sceGuDepthBuffer((void*)0x110000, PSPDISP_DISPLAY_FRAME_BUFFER_STRIDE);
+  sceGuOffset(2048 - (PSPDISP_DISPLAY_WIDTH / 2), 2048 - (PSPDISP_DISPLAY_HEIGHT / 2));
+  sceGuViewport(2048, 2048, PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT);
   sceGuDepthRange(0xc350, 0x2710);
-  sceGuScissor(0, 0, SCR_WIDTH, SCR_HEIGHT);
+  sceGuScissor(0, 0, PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT);
   sceGuEnable(GU_SCISSOR_TEST);
   sceGuAlphaFunc(GU_GREATER, 0, 0xff);
   sceGuEnable(GU_ALPHA_TEST);
@@ -160,9 +155,9 @@ void graphicDrawBackground(bool drawBars, bool transparent)
       graphicClearScreen(GRAPHIC_BACKGROUND_COLOR);
     
     sceGuStart(GU_DIRECT, list);
-    graphicDrawColoredRectangle(GRAPHIC_BACKGROUND_COLOR, GRAPHIC_BACKGROUND_COLOR, 0, 30, 480, 212);
-    graphicDrawColoredRectangle(GRAPHIC_BORDER_COLOR, GRAPHIC_BORDER_COLOR, 0, 0, 480, 30);
-    graphicDrawColoredRectangle(GRAPHIC_BORDER_COLOR, GRAPHIC_BORDER_COLOR, 0, 242, 480, 30);
+    graphicDrawColoredRectangle(GRAPHIC_BACKGROUND_COLOR, GRAPHIC_BACKGROUND_COLOR, 0, 30, PSPDISP_DISPLAY_WIDTH, 212);
+    graphicDrawColoredRectangle(GRAPHIC_BORDER_COLOR, GRAPHIC_BORDER_COLOR, 0, 0, PSPDISP_DISPLAY_WIDTH, 30);
+    graphicDrawColoredRectangle(GRAPHIC_BORDER_COLOR, GRAPHIC_BORDER_COLOR, 0, 242, PSPDISP_DISPLAY_WIDTH, 30);
     sceGuFinish();
     sceGuSync(0,0);
   }
@@ -183,7 +178,7 @@ void graphicSetupOrtho()
 {
   sceGumMatrixMode(GU_PROJECTION);
   sceGumLoadIdentity();
-  sceGumOrtho(0, 480, 272, 0, -1, 1);
+  sceGumOrtho(0, PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT, 0, -1, 1);
 
   sceGumMatrixMode(GU_VIEW);
   sceGumLoadIdentity();
@@ -385,9 +380,9 @@ void graphicDrawFrame(unsigned int* textureData, bool forceDrawing)
   sceGuTexFilter(GU_NEAREST,GU_NEAREST);
   sceGuTexOffset(0.0f, 0.0f);
 
-  sceGuTexImage(0, 512, 512, SCR_WIDTH, (void*)textureData);
+  sceGuTexImage(0, 512, 512, PSPDISP_DISPLAY_WIDTH, (void*)textureData);
 
-  graphicSlicedBlit(0.0f, 0.0f, SCR_WIDTH, SCR_HEIGHT, 512.0f, 512.0f);
+  graphicSlicedBlit(0.0f, 0.0f, PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT, 512.0f, 512.0f);
 
   sceGuFinish();
   sceGuSync(0,0);
