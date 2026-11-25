@@ -19,7 +19,7 @@
  * Another PSP plugged meanwhile waits for its turn, and another PSP connecting over WLAN meanwhile is refused (it would give up after a few seconds without frames anyway), then it connects again by itself.
  * So the WLAN thread keeps accepting the connections, and serves each PSP on a thread of its own.
  *
- * It talks the old protocol of the PSP app (see `shared.old.h`).
+ * It talks the old protocol of the PSP app (see `shared.h`).
  * It runs until it's asked to stop (e.g. with Ctrl+C, see `system.c`), which aborts the waits for a PSP and the running transfer, so it stops at once.
  *
  * It runs as the user, in the desktop session, as the desktop app: the install gives it the access to the PSP and to the virtual devices (see the README).
