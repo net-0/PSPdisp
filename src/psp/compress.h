@@ -15,11 +15,10 @@
 #include <pspsdk.h>
 #include <psptypes.h>
 #include <pspjpeg.h>
-#include <png.h>
+#include <stdio.h> // IWYU pragma: keep
 #include <jpeglib.h>
 #include "common.h"
 #include "com.h"
-#include "debug.h"
 
 
 unsigned char* g_pixelBuffer;
@@ -28,15 +27,11 @@ SceUID g_compressThreadId;
 void compressInit();
 void compressTerm();
 void compressClearBuffers();
-void compressConvertBmp(comFrameHeader* frameHeader);
+void compressConvertBmp();
 void compressTermJpegDecoding();
 int compressInitJpegDecoding();
-int compressInitPngDecoding();
-void compressTermPngDecoding();
-void compressDecompressJpeg(comFrameHeader* frameHeader);
-void compressDecompressPng(comFrameHeader* frameHeader);
+void compressDecompressJpeg(PSPdispComFrameHeader* frameHeader);
 void compressDecodingAndDrawingThread(SceSize args, void *argp);
 void compressSwitchTargetBuffer();
-void compressPngReadDataCallback(png_structp png_ptr, png_bytep data, png_size_t length);
 
 #endif

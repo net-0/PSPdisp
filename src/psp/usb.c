@@ -16,7 +16,7 @@
 
 
 int l_currentUsbMode; // Currently used usb mode
-SceUID l_usbhostfsModuleId = 0; // ID of the usbhostfs prx
+SceUID l_usbModuleId = 0; // ID of the usb prx
 
 
 
@@ -35,7 +35,7 @@ void usbEnterLoop()
   {
     // Usb initializaton failed, draw error message and return to the main menu
     char errorMessage[256];
-    sprintf(errorMessage, "Could not start the USB driver\n(error 0x%08lX, code %d).\n\nPlease disable all USB related plugins and try again.", (long unsigned int)l_usbhostfsModuleId, handle);
+    sprintf(errorMessage, "Could not start the USB driver\n(error 0x%08lX, code %d).\n\nPlease disable all USB related plugins and try again.", (long unsigned int)l_usbModuleId, handle);
     msgShowError(errorMessage, false, false);
   }
   else
@@ -51,8 +51,6 @@ void usbEnterLoop()
 	  // Stop the power save idle thread
 	  powerTermIdleThread();
   }
-
-  DEBUG_PRINTF("usbEnterLoop: now invoking usbTerm()\n");
 
   // Shutdown driver, unload modules
   // But only if the error was not caused by PSPLink
@@ -72,26 +70,21 @@ void usbEnterLoop()
 */
 int usbInit()
 {
-  if (l_usbhostfsModuleId == 0)
-    l_usbhostfsModuleId = utilsLoadStartModule("usbhostfs.prx");
- 
-  DEBUG_PRINTF("usbInit: usbhostfsModuleId = 0x%08lX\n", (long)l_usbhostfsModuleId);
+  if (l_usbModuleId == 0)
+    l_usbModuleId = utilsLoadStartModule("usb.prx");
 
-  if (l_usbhostfsModuleId < 0)
+  if (l_usbModuleId < 0)
     return -1;
 
   if (sceUsbStart(PSP_USBBUS_DRIVERNAME, 0, 0) != 0)
     return -2;
 
-  if (sceUsbStart(USB_HOSTFSDRIVER_NAME, 0, 0) != 0)
+  if (sceUsbStart(PSPDISP_USB_DRIVER_NAME, 0, 0) != 0)
     return -3;
 
-  l_currentUsbMode = (configUsbMode == 0) ? USB_HOSTFSDRIVER_PID_TYPE_B : USB_HOSTFSDRIVER_PID_TYPE_C;
-  if (sceUsbActivate(l_currentUsbMode) != 0) 
+  l_currentUsbMode = (configUsbMode == 0) ? PSPDISP_USB_PRODUCT_ID_TYPE_B : PSPDISP_USB_PRODUCT_ID_TYPE_C;
+  if (sceUsbActivate(l_currentUsbMode) != 0)
     return -4;
-
-  struct AsyncEndpoint endp;
-  usbAsyncRegister(4, &endp);
 
   return 0;
 }
@@ -107,30 +100,15 @@ int usbInit()
 */
 void usbTerm() 
 {
-  int result = 0;
+  sceUsbDeactivate(l_currentUsbMode);
+  sceUsbStop(PSPDISP_USB_DRIVER_NAME, 0, 0);
+  sceUsbStop(PSP_USBBUS_DRIVERNAME, 0, 0);
 
-  usbAsyncUnregister(4);
-
-  DEBUG_PRINTF("usbTerm: enter\n");
-  result = sceUsbDeactivate(l_currentUsbMode);
-
-  DEBUG_PRINTF("usbTerm: sceUsbDeactive done 0x%08lX\n", (long unsigned int)result);
-
-  result = sceUsbStop(USB_HOSTFSDRIVER_NAME, 0, 0);
-
-  DEBUG_PRINTF("usbTerm: sceUsbStop 1 done 0x%08lX\n", (long unsigned int)result);
-
-  result = sceUsbStop(PSP_USBBUS_DRIVERNAME, 0, 0);
-
-  DEBUG_PRINTF("usbTerm: sceUsbStop 2 done 0x%08lX\n", (long unsigned int)result);
-
-  result = utilsStopUnloadModule(l_usbhostfsModuleId);
-
-  DEBUG_PRINTF("usbTerm: exit 0x%08lX\n", (long unsigned int)result);
+  int result = utilsStopUnloadModule(l_usbModuleId);
 
   // Unloading is broken on 6.20 TN-C
   if (result != 0x80020136)
-    l_usbhostfsModuleId = 0;
+    l_usbModuleId = 0;
 }
 
 
@@ -169,12 +147,12 @@ void usbDrawWaitingForDataMessage(bool enteringPowerSaveMode, bool clearScreen, 
 
   graphicStartDrawing();
 
-  intraFontSetStyle(sansSerifLarge, 1.0f, COLOR_WHITE, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+  intraFontSetStyle(sansSerifLarge, 1.0f, COLOR_WHITE, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
   intraFontPrint(sansSerifLarge, 240, 125, "Waiting for data...");
 
   if (enteringPowerSaveMode)
   {
-    intraFontSetStyle(sansSerifSmall, 1.0f, COLOR_WHITE, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+    intraFontSetStyle(sansSerifSmall, 1.0f, COLOR_WHITE, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
     intraFontPrint(sansSerifSmall, 240, 200, "Entering power save mode in 10 seconds.");
   }
 

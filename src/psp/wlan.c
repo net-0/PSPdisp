@@ -37,8 +37,6 @@ int l_tempSocket = -1; // Socket used for the initial connection phase
 */
 void net_callback(int oldState, int newState, int event, int error, void *pArg) 
 {
-  DEBUG_PRINTF("net_callback: old=%d, new=%d\n", oldState, newState)
-
   if ((oldState == PSP_NET_APCTL_STATE_GOT_IP) && (newState == PSP_NET_APCTL_STATE_DISCONNECTED))
   {
     // Lost connection to wireless network
@@ -85,11 +83,7 @@ void wlanWatchdogThread(SceSize args, void *argp)
 {
   while (l_watchdogThreadRunning)
   {
-    DEBUG_PRINTF("wlanWatchodgThread ready\n")
-
     sceKernelWaitSema(l_timeoutSema, 1, NULL);
-
-    DEBUG_PRINTF("***netSocketTimeoutAlarm triggered: socket=%d, temp_socket=%d, resolver=%d\n", g_netSocket, l_tempSocket, l_resolverId)
 
     if (g_netSocket > -1)
       sceNetInetSocketAbort(g_netSocket);
@@ -131,8 +125,6 @@ bool netStartWlanConnection()
 
   while (wlanLoopRunning)
   {
-    DEBUG_PRINTF("wlan loop: connecting to AP\n")
-
     // Initialize WLAN functions
     if (netInit())
     {
@@ -148,8 +140,6 @@ bool netStartWlanConnection()
         do
         {
           // Connected to an access point, start connecting to server
-          DEBUG_PRINTF("wlan loop: connecting to server\n")
-
           g_netSocket = netConnectToServerLoop(NULL);
 
           // Send password, the server will reset the connection if it doesn't match
@@ -161,12 +151,9 @@ bool netStartWlanConnection()
           {
             g_netConnected = true;
 
-            DEBUG_PRINTF("wlan loop: entering com loop\n");
             comLoop();
-            DEBUG_PRINTF("wlan loop: exiting com loop\n");
 
             netDisconnect();
-            DEBUG_PRINTF("wlan loop: disconnected from server\n");
           }
 
           wlanLoopRunning = g_comRunning;
@@ -300,7 +287,7 @@ void netdrawConnectingMessage(char *ipText, char *resolvedIp)
   else
     sprintf(buffer, "Connecting to '%s:%d'.", ipText, NET_PORT + configWlanPortOffset);
 
-  intraFontSetStyle(sansSerifLarge, 1.0f, COLOR_WHITE, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+  intraFontSetStyle(sansSerifLarge, 1.0f, COLOR_WHITE, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
   intraFontPrint(sansSerifLarge, 240, 125, buffer);
 
   if (resolvedIp)
@@ -309,7 +296,7 @@ void netdrawConnectingMessage(char *ipText, char *resolvedIp)
     intraFontPrint(sansSerifLarge, 240, 145, buffer);
   }
 
-  intraFontSetStyle(sansSerifSmall, 1.0f, COLOR_WHITE, COLOR_BLACK, INTRAFONT_ALIGN_CENTER);
+  intraFontSetStyle(sansSerifSmall, 1.0f, COLOR_WHITE, COLOR_BLACK, TEXT_ANGLE_HORIZONTAL, INTRAFONT_ALIGN_CENTER);
   intraFontPrint(sansSerifSmall, 240, 180, "The IP address can be changed in the settings menu.");
 
   graphicFinishDrawing(true);
@@ -576,7 +563,6 @@ int netConnect(unsigned long remoteIp, unsigned short remotePort, unsigned int t
     if (err == 0)
     {
       // Success
-      DEBUG_PRINTF("Connection established after %d ms...\n", ElapsedTime);
 
       // Make socket blocking
       NoBlock = 0; 

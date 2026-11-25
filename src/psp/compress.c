@@ -17,11 +17,10 @@
 
 bool l_sceJpegAvailable = false; // For libjpeg fallback
 bool l_buffersCleared = false; // Avoid clearing the buffers if they are already empty
-bool l_lastFrameWasRotated = false; // Used to determine whether the Jpeg decoder has to be reset
 SceUID l_jpegModuleId;
 
-unsigned char __attribute__((aligned(16))) l_pixelBuffer_1[480 * 272 * 4];
-unsigned char __attribute__((aligned(16))) l_pixelBuffer_2[480 * 272 * 4];
+unsigned char __attribute__((aligned(16))) l_pixelBuffer_1[PSPDISP_DISPLAY_WIDTH * PSPDISP_DISPLAY_HEIGHT * 4];
+unsigned char __attribute__((aligned(16))) l_pixelBuffer_2[PSPDISP_DISPLAY_WIDTH * PSPDISP_DISPLAY_HEIGHT * 4];
 
 
 // libjpeg types and variables
@@ -38,7 +37,7 @@ typedef struct
   unsigned char* outputBuffer;
   unsigned int bufferPosition;
   unsigned int bufferSize;
-} 
+}
 libjpegSourceManager;
 
 struct jpeg_decompress_struct l_libjpegCinfo;
@@ -57,10 +56,9 @@ void compressInit()
   compressClearBuffers();
 
   compressInitJpegDecoding();
-  compressInitPngDecoding();
 
   // Create decompression thread
-  g_compressThreadId = sceKernelCreateThread("compressThread", (SceKernelThreadEntry)compressDecodingAndDrawingThread, 0x18, 0x10000, PSP_THREAD_ATTR_USER, 0);    
+  g_compressThreadId = sceKernelCreateThread("compressThread", (SceKernelThreadEntry)compressDecodingAndDrawingThread, 0x18, 0x10000, PSP_THREAD_ATTR_USER, 0);
 }
 
 
@@ -79,7 +77,6 @@ void compressTerm()
   sceKernelDeleteThread(g_compressThreadId);
 
   compressTermJpegDecoding();
-  compressTermPngDecoding();
 }
 
 
@@ -97,8 +94,8 @@ void compressClearBuffers()
 
   g_pixelBuffer = l_pixelBuffer_1;
 
-  memset(l_pixelBuffer_1, 0, 480 * 272 * 4);
-  memset(l_pixelBuffer_2, 0, 480 * 272 * 4);
+  memset(l_pixelBuffer_1, 0, sizeof(l_pixelBuffer_1));
+  memset(l_pixelBuffer_2, 0, sizeof(l_pixelBuffer_2));
 
   l_buffersCleared = true;
 }
@@ -113,7 +110,7 @@ void compressClearBuffers()
   ---------------------------------------------------
   Returns 0 on success, a negative value on error.
 */
-int compressInitJpegDecoding() 
+int compressInitJpegDecoding()
 {
   int code = -1;
 
@@ -122,19 +119,18 @@ int compressInitJpegDecoding()
   if (l_jpegModuleId < 0)
   {
     // Try loading the module directly
-    l_jpegModuleId = utilsLoadStartModule("flash0:/kd/avcodec.prx");  
+    l_jpegModuleId = utilsLoadStartModule("flash0:/kd/avcodec.prx");
   }
 
   if (l_jpegModuleId > -1)
   {
     code = -2;
-    if (sceJpegInitMJpeg() == 0) 
+    if (sceJpegInitMJpeg() == 0)
     {
       code = -3;
-      if (sceJpegCreateMJpeg(480, 272) == 0) 
+      if (sceJpegCreateMJpeg(PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT) == 0)
       {
         // Success!
-        l_lastFrameWasRotated = false;
         l_sceJpegAvailable = true;
         return 0;
       }
@@ -200,65 +196,26 @@ void compressTermJpegDecoding()
 
 
 /*
-  compressInitPngDecoding
-  ---------------------------------------------------
-  Initialize the PNG decompression.
-  ---------------------------------------------------
-*/
-int compressInitPngDecoding()
-{
-  return 0;
-}
-
-
-
-
-/*
-  compressTermPngDecoding
-  ---------------------------------------------------
-  Shut down the PNG decompression.
-  ---------------------------------------------------
-*/
-void compressTermPngDecoding()
-{
-  return;
-}
-
-
-
-
-/*
   compressConvertBmp
   ---------------------------------------------------
   Bring an uncompressed frame into the right format
   for the framebuffer.
   ---------------------------------------------------
 */
-void compressConvertBmp(comFrameHeader* frameHeader)
+void compressConvertBmp()
 {
   // Bloat the 24 Bit values to 32 Bit
   // Windows Bitmaps are in BGR order and upside down
 
-  unsigned int imageWidth;
-  unsigned int imageHeight;
+  const unsigned int imageWidth = PSPDISP_DISPLAY_WIDTH;
+  const unsigned int imageHeight = PSPDISP_DISPLAY_HEIGHT;
 
   unsigned char* pixelsBackup = (unsigned char*)g_pixelBuffer;
   unsigned char* dataBackup = g_comImageReceiveBuffer;
-  
-  if ((frameHeader->flags & COM_FLAGS_IMAGE_IS_ROTATED_90_DEG) || (frameHeader->flags & COM_FLAGS_IMAGE_IS_ROTATED_270_DEG))
-  {
-    imageWidth = 272;
-    imageHeight = 480;
-  }
-  else
-  {
-    imageWidth = 480;
-    imageHeight = 272;
-  }
 
   unsigned char* inPixels;
   unsigned char* outPixels;
-  
+
   int i, j;
 
   for (i = imageHeight - 1; i >= 0; i--)
@@ -277,23 +234,6 @@ void compressConvertBmp(comFrameHeader* frameHeader)
     }
   }
 
-/*
-  unsigned char* inPixels = &g_comImageReceiveBuffer[0] + 1;
-  unsigned char* outPixels = (unsigned char*)g_pixelBuffer + 1;
-
-  int i = 0;
-  while (i < 480 * 272)
-  {
-    *(outPixels - 1) = *(inPixels + 1);
-    *(outPixels + 1) = *(inPixels - 1);
-    *(outPixels) = *(inPixels);
-
-    outPixels += 4;
-    inPixels += 3;
-    i++;
-  }
-*/
-
   sceKernelDcacheWritebackInvalidateAll();
 }
 
@@ -307,27 +247,12 @@ void compressConvertBmp(comFrameHeader* frameHeader)
   Decompress a Jpeg frame.
   ---------------------------------------------------
 */
-void compressDecompressJpeg(comFrameHeader* frameHeader)
+void compressDecompressJpeg(PSPdispComFrameHeader* frameHeader)
 {
-  static bool lastFrameRotated = false;
-  bool rotated = ((frameHeader->flags & COM_FLAGS_IMAGE_IS_ROTATED_90_DEG) || (frameHeader->flags & COM_FLAGS_IMAGE_IS_ROTATED_270_DEG));
-
   if (l_sceJpegAvailable)
   {
     // Use sceJpeg* functions
-    if (lastFrameRotated != rotated)
-    {
-      sceJpegDeleteMJpeg();
-
-      if (rotated)
-        sceJpegCreateMJpeg(272, 480);
-      else
-        sceJpegCreateMJpeg(480, 272);
-
-      lastFrameRotated = rotated;
-    }
-
-    sceJpegDecodeMJpeg(&g_comImageReceiveBuffer[0], frameHeader->imageSize, g_pixelBuffer, 0);
+    sceJpegDecodeMJpeg(&g_comImageReceiveBuffer[0], frameHeader->image_size, g_pixelBuffer, 0);
   }
   else
   {
@@ -336,7 +261,7 @@ void compressDecompressJpeg(comFrameHeader* frameHeader)
     source->buffer = &g_comImageReceiveBuffer[0];
     source->outputBuffer = g_pixelBuffer;
     source->bufferPosition = 0;
-    source->bufferSize = frameHeader->imageSize;
+    source->bufferSize = frameHeader->image_size;
 
     // Point the buffer to the whole file in memory
     source->sourceManager.bytes_in_buffer = source->bufferSize;
@@ -347,6 +272,8 @@ void compressDecompressJpeg(comFrameHeader* frameHeader)
       l_libjpegCinfo.do_fancy_upsampling = FALSE;
       l_libjpegCinfo.do_block_smoothing = FALSE;
       l_libjpegCinfo.dct_method = JDCT_FASTEST;
+      // 4 bytes per pixel, as the texture of the frame (GU_PSM_8888)
+      l_libjpegCinfo.out_color_space = JCS_EXT_RGBA;
 
 
       if (jpeg_start_decompress(&l_libjpegCinfo))
@@ -360,107 +287,10 @@ void compressDecompressJpeg(comFrameHeader* frameHeader)
         }
         jpeg_finish_decompress(&l_libjpegCinfo);
       }
-      sceKernelDcacheWritebackInvalidateRange(source->outputBuffer, source->bufferSize);
+      sceKernelDcacheWritebackInvalidateAll();
     }
   }
 }
-
-
-
-
-/*
-  compressPngReadDataCallback
-  ---------------------------------------------------
-  Callback for the PNG decompressor, managing reading
-  the input data.
-  ---------------------------------------------------
-*/
-void compressPngReadDataCallback(png_structp png_ptr, png_bytep data, png_size_t length)
-{
-  unsigned int* bufferPosition = (unsigned int*)png_get_io_ptr(png_ptr);
-  memcpy(data, &g_comImageReceiveBuffer[*bufferPosition], length);
-  *bufferPosition += length;
-}
-
-
-
-
-/*
-  compressDecompressPng
-  ---------------------------------------------------
-  Decompress a PNG input image. Unusably slow.
-  ---------------------------------------------------
-*/
-void compressDecompressPng(comFrameHeader* frameHeader)
-{
-  png_structp png_ptr;
-  png_infop info_ptr;
-  unsigned int sig_read = 0;
-  png_uint_32 width;
-  png_uint_32 height;
-  int bit_depth;
-  int color_type;
-  int interlace_type;
-  size_t x, y;
-  u32* line;
-
-  png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-  if (png_ptr == NULL) 
-  {
-    return;
-  }
-
-  info_ptr = png_create_info_struct(png_ptr);
-  if (info_ptr == NULL) 
-  {
-    png_destroy_read_struct(&png_ptr, NULL, NULL);
-    return;
-  }
-
-  unsigned int bufferPosition = 0;
-  png_set_read_fn(png_ptr, &bufferPosition, &compressPngReadDataCallback);
-
-  png_set_sig_bytes(png_ptr, sig_read);
-  png_read_info(png_ptr, info_ptr);
-  png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type, &interlace_type, NULL, NULL);
-  png_set_strip_16(png_ptr);
-  png_set_packing(png_ptr);
-
-  if (color_type == PNG_COLOR_TYPE_PALETTE)
-    png_set_palette_to_rgb(png_ptr);
-
-  if (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8) 
-    png_set_expand_gray_1_2_4_to_8(png_ptr);
-
-  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) 
-    png_set_tRNS_to_alpha(png_ptr);
-
-  png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
-
-  line = (u32*)malloc(width * 4);
-  if (!line) 
-  {
-    png_destroy_read_struct(&png_ptr, NULL, NULL);
-    return;
-  }
-
-  for (y = 0; y < height; y++)
-  {
-    png_read_row(png_ptr, (u8*) line, NULL);
-    for (x = 0; x < width; x++)
-    {
-      ((unsigned int*)g_pixelBuffer)[y*width+x] = line[x];
-    }
-  }
-
-  free(line);
-
-  png_read_end(png_ptr, info_ptr);
-  png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-
-  sceKernelDcacheWritebackInvalidateAll();
-}
-
 
 
 
@@ -473,9 +303,9 @@ void compressDecompressPng(comFrameHeader* frameHeader)
 */
 void compressDecodingAndDrawingThread(SceSize args, void *argp)
 {
-  comFrameHeader* frameHeader = (comFrameHeader*)argp;
+  PSPdispComFrameHeader* frameHeader = (PSPdispComFrameHeader*)argp;
 
-  if (frameHeader->flags & COM_FLAGS_IMAGE_CLEAR_SCREEN)
+  if (frameHeader->flags & PSPDISP_COM_FLAG_IMAGE_CLEAR_SCREEN)
   {
     compressClearBuffers();
 
@@ -489,21 +319,17 @@ void compressDecodingAndDrawingThread(SceSize args, void *argp)
     compressSwitchTargetBuffer();
 
     // Decode jpeg
-    if (frameHeader->flags & COM_FLAGS_IMAGE_IS_UNCOMPRESSED)
+    if (frameHeader->flags & PSPDISP_COM_FLAG_IMAGE_IS_UNCOMPRESSED)
     {
-      compressConvertBmp(frameHeader);
+      compressConvertBmp();
     }
-    else if (frameHeader->flags & COM_FLAGS_IMAGE_IS_JPEG)
+    else if (frameHeader->flags & PSPDISP_COM_FLAG_IMAGE_IS_JPEG)
     {
       compressDecompressJpeg(frameHeader);
     }
-    else if (frameHeader->flags & COM_FLAGS_IMAGE_IS_PNG)
-    {
-      compressDecompressPng(frameHeader);
-    }
 
     // Draw image
-    graphicDrawFrame((unsigned int*)g_pixelBuffer, (frameHeader->flags & COM_FLAGS_IMAGE_ROTATION_MASK), false);
+    graphicDrawFrame((unsigned int*)g_pixelBuffer, false);
   }
 
   // Don't draw when the menu is showing
@@ -511,7 +337,7 @@ void compressDecodingAndDrawingThread(SceSize args, void *argp)
     return;
 
   // Draw danzeff keyboard on top of the frame
-  g_oskDanzeffOpenOnSelect = (frameHeader->flags & COM_FLAGS_ENABLE_OSK);
+  g_oskDanzeffOpenOnSelect = (frameHeader->flags & PSPDISP_COM_FLAG_ENABLE_OSK);
   if (g_oskDanzeffActive)
     graphicDrawDanzeff();
 

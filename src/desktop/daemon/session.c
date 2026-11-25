@@ -7,7 +7,7 @@
  *****************************************************/
 
 /*
- * The session with a connected PSP, over the old protocol (see `shared.old.h`): for each frame, the daemon sends a frame header and its data, and the PSP answers with its controls and its settings.
+ * The session with a connected PSP, over the old protocol (see `shared.h`): for each frame, the daemon sends a frame header and its data, and the PSP answers with its controls and its settings.
  * Over USB the PSP sends its settings in every response, over WLAN only when they changed (see `PSPdispDaemonLink.com_settings_always`).
  *
  * With sound, every frame carries a chunk of audio, because the PSP app resets its sound when a frame comes without one, so the audio chunks give the pace of the frames.
@@ -16,7 +16,7 @@
  *
  * The streaming settings start as saved (see `settings/settings.c`), the PSP changes them on its "PC Settings" menu (or applies a preset), and they're saved again, so the desktop app shows them.
  * When they change on the disk (e.g. from the desktop app), the session takes them before the next frame (see `snapshot.c`).
- * What the virtual display can't do is turned back to its default and sent back, so the PSP menu shows what is used: the screen modes and viewports (the virtual display is already the size of the PSP), the SideShow mode and the autoselection of the display (there's only one).
+ * What the virtual display can't do is turned back to its default and sent back, so the PSP menu shows what is used: the autoselection of the display (there's only one).
  *
  * The PSP controls drive what the settings choose: the virtual gamepad, a control file (a virtual keyboard and mouse), or nothing (see `controller/controller.c`).
  */
@@ -36,9 +36,8 @@
 #include "./state.c"
 
 #define PSPDISP_DAEMON_SESSION_READ_TIMEOUT 2000 // Time to wait for a response of the PSP, in milliseconds
-#define PSPDISP_DAEMON_SESSION_DATA_CAPACITY (400 * 1024) // Max size of the data of a frame, the size of the PSP receive buffer (`COM_IMAGE_BUFFER_SIZE` of the PSP app)
 
-static_assert(PSPDISP_DAEMON_IMAGE_UNCOMPRESSED_SIZE + 2688 * 2 + sizeof(PSPdispComSettings) + PSPDISP_COM_NAME_SIZE * (PSPDISP_COM_MAX_DISPLAY_DEVICES + PSPDISP_COM_MAX_CONTROLS + PSPDISP_COM_MAX_PRESETS) <= PSPDISP_DAEMON_SESSION_DATA_CAPACITY, "The biggest frame data must fit the PSP receive buffer");
+static_assert(PSPDISP_DAEMON_IMAGE_UNCOMPRESSED_SIZE + PSPDISP_COM_AUDIO_CHUNK_2688_SIZE + sizeof(PSPdispComSettings) + PSPDISP_COM_NAME_SIZE * (PSPDISP_COM_MAX_DISPLAY_DEVICES + PSPDISP_COM_MAX_CONTROLS + PSPDISP_COM_MAX_PRESETS) <= PSPDISP_COM_MAX_FRAME_DATA_SIZE, "The biggest frame data must fit the PSP receive buffer");
 
 /**
  * @brief Link to the PSP, the transport of the session (USB or WLAN).
@@ -92,7 +91,7 @@ typedef struct {
 	uint64_t frame_count; // Count of `frame`, from the media
 	uint32_t frame[PSPDISP_DISPLAY_WIDTH * PSPDISP_DISPLAY_HEIGHT]; // The latest frame of the virtual display
 	PSPdispDaemonImage *image; // Encoder of the images
-	uint8_t data[PSPDISP_DAEMON_SESSION_DATA_CAPACITY]; // Data of the frame being sent: the image, the audio chunk, then the communication settings
+	uint8_t data[PSPDISP_COM_MAX_FRAME_DATA_SIZE]; // Data of the frame being sent: the image, the audio chunk, then the communication settings
 } PSPdispDaemonSession;
 
 /**
@@ -109,15 +108,15 @@ uint32_t pspdisp_daemon_session_chunk_size(PSPdispComSampleRate sample_rate, uin
 		case PSPDISP_COM_SAMPLE_RATE_11025:
 			if (flags != NULL)
 				*flags |= PSPDISP_COM_FLAG_AUDIO_11025_HZ | PSPDISP_COM_FLAG_AUDIO_CHUNK_2240;
-			return 2240 * 2;
+			return PSPDISP_COM_AUDIO_CHUNK_2240_SIZE;
 		case PSPDISP_COM_SAMPLE_RATE_44100:
 			if (flags != NULL)
 				*flags |= PSPDISP_COM_FLAG_AUDIO_44100_HZ | PSPDISP_COM_FLAG_AUDIO_CHUNK_2688;
-			return 2688 * 2;
+			return PSPDISP_COM_AUDIO_CHUNK_2688_SIZE;
 		default:
 			if (flags != NULL)
 				*flags |= PSPDISP_COM_FLAG_AUDIO_22050_HZ | PSPDISP_COM_FLAG_AUDIO_CHUNK_2240;
-			return 2240 * 2;
+			return PSPDISP_COM_AUDIO_CHUNK_2240_SIZE;
 	}
 }
 
@@ -156,10 +155,6 @@ void pspdisp_daemon_session_build_com_settings(PSPdispDaemonSession *session) {
 
 	session->com_settings = (PSPdispComSettings) {
 		.device_index = 0,
-		.device_use_sideshow = 0, // No SideShow, it's a Windows Vista gadget platform
-		.screen_mode = PSPDISP_COM_SCREEN_MODE_FIT_SCREEN, // The virtual display is already the size of the PSP
-		.screen_rotation = PSPDISP_COM_ROTATION_0, // The display settings of the computer rotate the virtual display
-		.screen_viewport = PSPDISP_COM_VIEWPORT_480X272,
 		.quality = streaming_settings->quality,
 		.screen_no_compression = streaming_settings->uncompressed,
 		.update_interval = streaming_settings->update_interval,

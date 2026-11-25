@@ -39,14 +39,14 @@ void audioInit()
     g_audioCurrentFrameSize = l_currentChunkSize * 2;
     g_audioCurrentBufferSize = g_audioCurrentFrameSize * 10;
   }
-    
+
   audioResetPlaybackBuffer();
 
   sceAudioSRCChReserve(l_currentChunkSize, l_currentSampleRate, 2);
 
   l_runAudioThread = true;
 
-  l_playbackThreadId = sceKernelCreateThread("playbackThread", (SceKernelThreadEntry)audioPlaybackThread, 0x18, 0x10000, PSP_THREAD_ATTR_USER, 0);    
+  l_playbackThreadId = sceKernelCreateThread("playbackThread", (SceKernelThreadEntry)audioPlaybackThread, 0x18, 0x10000, PSP_THREAD_ATTR_USER, 0);
   sceKernelStartThread(l_playbackThreadId, 0, 0);
 }
 
@@ -84,8 +84,6 @@ void audioTerm()
 */
 void audioResetPlaybackBuffer()
 {
-//  DEBUG_PRINTF("audioResetPlaybackBuffer called\n")
-
   memset(g_comAudioReceiveBuffer, 0, COM_AUDIO_BUFFER_SIZE);
   g_comAudioWritePosition = (g_audioCurrentBufferSize / 2);
   g_audioPlaybackPosition = 0;
@@ -98,13 +96,13 @@ void audioResetPlaybackBuffer()
 /*
   audioCheckIfResetIsNeeded
   ---------------------------------------------------
-  Check if the playing position advanced over the 
+  Check if the playing position advanced over the
   filling position, mute sound if so
   ---------------------------------------------------
 */
-void audioCheckIfResetIsNeeded(comFrameHeader* header)
+void audioCheckIfResetIsNeeded(PSPdispComFrameHeader* header)
 {
-  if (header->flags & COM_FLAGS_CONTAINS_AUDIO_DATA)
+  if (header->flags & PSPDISP_COM_FLAG_CONTAINS_AUDIO_DATA)
   {
     l_lastFrameContainedAudio = true;
   }
@@ -116,18 +114,18 @@ void audioCheckIfResetIsNeeded(comFrameHeader* header)
     l_lastFrameContainedAudio = false;
   }
 
-  if (l_lastFrameSampleRate != (header->flags & COM_FLAGS_AUDIO_SAMPLE_RATE_MASK))
+  if (l_lastFrameSampleRate != (header->flags & PSPDISP_COM_FLAG_AUDIO_SAMPLE_RATE_MASK))
   {
-    if (header->flags & COM_FLAGS_AUDIO_11025_HZ)
+    if (header->flags & PSPDISP_COM_FLAG_AUDIO_11025_HZ)
       l_currentSampleRate = 11025;
-    else if (header->flags & COM_FLAGS_AUDIO_22050_HZ)
+    else if (header->flags & PSPDISP_COM_FLAG_AUDIO_22050_HZ)
       l_currentSampleRate = 22050;
-    else if (header->flags & COM_FLAGS_AUDIO_44100_HZ)
+    else if (header->flags & PSPDISP_COM_FLAG_AUDIO_44100_HZ)
       l_currentSampleRate = 44100;
 
-    if (header->flags & COM_FLAGS_AUDIO_CHUNK_2240)
+    if (header->flags & PSPDISP_COM_FLAG_AUDIO_CHUNK_2240)
       l_currentChunkSize = 2240;
-    else if (header->flags & COM_FLAGS_AUDIO_CHUNK_2688)
+    else if (header->flags & PSPDISP_COM_FLAG_AUDIO_CHUNK_2688)
       l_currentChunkSize = 2688;
 
     g_audioCurrentFrameSize = 2 * l_currentChunkSize;
@@ -135,7 +133,7 @@ void audioCheckIfResetIsNeeded(comFrameHeader* header)
 
     audioTerm();
     audioInit();
-    l_lastFrameSampleRate = (header->flags & COM_FLAGS_AUDIO_SAMPLE_RATE_MASK);
+    l_lastFrameSampleRate = (header->flags & PSPDISP_COM_FLAG_AUDIO_SAMPLE_RATE_MASK);
   }
 }
 
@@ -154,7 +152,7 @@ void audioPlaybackThread(SceSize args, void *argp)
   l_lastPlaybackPosition = 0;
 
   while (l_runAudioThread)
-  { 
+  {
     // Check if the playing position advanced over the filling position, mute sound if so
     if ((l_lastPlaybackPosition <= g_comAudioWritePosition) && (g_audioPlaybackPosition >= g_comAudioWritePosition))
       audioResetPlaybackBuffer();

@@ -105,8 +105,6 @@ bool powerSetClockSpeed(int speedOption)
 //  int cpuClock = scePowerGetCpuClockFrequencyInt();
 //  int busClock = scePowerGetBusClockFrequencyInt();
 
-  DEBUG_PRINTF("Setting clockspeed to option: %d\n", speedOption);
-
   switch (speedOption)
   {
     case 0:
@@ -156,19 +154,19 @@ void powerInit()
   {
     switch (kernelGetModel())
     {
-      case 2: // 3000 03g
-      case 3: // 3000 04g
-      case 6: // 3000 07g
-      case 8: // 3000 09g
+      case PSPDISP_MODEL_03G:
+      case PSPDISP_MODEL_04G:
+      case PSPDISP_MODEL_07G:
+      case PSPDISP_MODEL_09G:
         l_loweredBrightness = 16;
         break;
 
-      case 4: // GO
+      case PSPDISP_MODEL_05G:
         l_loweredBrightness = 24;
         break;
 
-      case 0: // 1000
-      case 1: // 2000
+      case PSPDISP_MODEL_01G:
+      case PSPDISP_MODEL_02G:
       default:
         l_loweredBrightness = 8;
         break;
@@ -288,14 +286,10 @@ void powerEnablePowerSaveMode(bool savePower)
 
 void powerStartIdleThread()
 {
-  DEBUG_PRINTF("entering powerStartIdleThread()\n");
-
   l_runPowerSaveThread = true;
 
   l_powerSaveThreadId = sceKernelCreateThread("powerSaveThread", (SceKernelThreadEntry)powerIdleThread, 0x18, 0x10000, PSP_THREAD_ATTR_USER, 0);    
   sceKernelStartThread(l_powerSaveThreadId, 0, 0);
-
-  DEBUG_PRINTF("exiting powerStartIdleThread()\n");
 }
 
 
@@ -309,14 +303,10 @@ void powerStartIdleThread()
 */
 void powerTermIdleThread()
 {
-  DEBUG_PRINTF("entering powerTermIdleThread()\n");
-
   l_runPowerSaveThread = false;
 
   sceKernelWaitThreadEnd(l_powerSaveThreadId, NULL);
   sceKernelDeleteThread(l_powerSaveThreadId);
-
-  DEBUG_PRINTF("exiting powerTermIdleThread()\n");
 }
 
 

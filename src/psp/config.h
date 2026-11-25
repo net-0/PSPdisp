@@ -14,8 +14,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "debug.h"
-#include "shared.h"
+#include "../shared.h"
 
 char configIpAddresses[5][36]; // individual entries must be 4 byte aligned
 char configMacAddresses[5][20];
@@ -43,7 +42,7 @@ int configVerboseBattery;
 int configTransparentMenu;
 char configWlanPassword[32];
 
-comSettingsReceived configPCSettings;
+PSPdispComSettingsReceived configPCSettings;
 
 void configLoadConfiguration();
 void configLoadInteger(FILE* file, char* name, int* value, int defaultValue, int minValue, int maxValue);

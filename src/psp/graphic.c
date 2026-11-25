@@ -15,12 +15,7 @@
 #include "msgdlg.h"
 
 
-#define BUF_WIDTH (512)
-#define SCR_WIDTH (480)
-#define SCR_HEIGHT (272)
 #define PIXEL_SIZE (4)
-#define FRAME_SIZE (BUF_WIDTH * SCR_HEIGHT * PIXEL_SIZE)
-#define ZBUF_SIZE (BUF_WIDTH * SCR_HEIGHT * 2)
 
 
 #define GRAPHIC_BACKGROUND_COLOR RGBA_TO_ABGR(0x304065D0)
@@ -28,12 +23,9 @@
 
 
 unsigned char* l_lastDrawnFrame; // Stores a pointer to the last drawn frame contents
-unsigned int l_lastRotation; // Last drawn frames orientation
 
 bool l_forceFrameDrawing = false;
 
-ScePspFVector3 l_moveToScreenCenter = {240.0f, 136.0f, 0.0f};
-   
 
 
 /*
@@ -47,18 +39,17 @@ void graphicInit()
   l_frameBuffer = (void*)0;
 
   l_lastDrawnFrame = NULL;
-  l_lastRotation = 0;
 
   sceGuInit();
 
   sceGuStart(GU_DIRECT, list);
-  sceGuDrawBuffer(GU_PSM_8888, (void*)0, BUF_WIDTH);
-  sceGuDispBuffer(SCR_WIDTH, SCR_HEIGHT, (void*)(BUF_WIDTH * SCR_HEIGHT * PIXEL_SIZE), BUF_WIDTH);
-  sceGuDepthBuffer((void*)0x110000, BUF_WIDTH);
-  sceGuOffset(2048 - (SCR_WIDTH / 2), 2048 - (SCR_HEIGHT / 2));
-  sceGuViewport(2048, 2048, SCR_WIDTH, SCR_HEIGHT);
+  sceGuDrawBuffer(GU_PSM_8888, (void*)0, PSPDISP_DISPLAY_FRAME_BUFFER_STRIDE);
+  sceGuDispBuffer(PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT, (void*)(PSPDISP_DISPLAY_FRAME_BUFFER_STRIDE * PSPDISP_DISPLAY_HEIGHT * PIXEL_SIZE), PSPDISP_DISPLAY_FRAME_BUFFER_STRIDE);
+  sceGuDepthBuffer((void*)0x110000, PSPDISP_DISPLAY_FRAME_BUFFER_STRIDE);
+  sceGuOffset(2048 - (PSPDISP_DISPLAY_WIDTH / 2), 2048 - (PSPDISP_DISPLAY_HEIGHT / 2));
+  sceGuViewport(2048, 2048, PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT);
   sceGuDepthRange(0xc350, 0x2710);
-  sceGuScissor(0, 0, SCR_WIDTH, SCR_HEIGHT);
+  sceGuScissor(0, 0, PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT);
   sceGuEnable(GU_SCISSOR_TEST);
   sceGuAlphaFunc(GU_GREATER, 0, 0xff);
   sceGuEnable(GU_ALPHA_TEST);
@@ -164,9 +155,9 @@ void graphicDrawBackground(bool drawBars, bool transparent)
       graphicClearScreen(GRAPHIC_BACKGROUND_COLOR);
     
     sceGuStart(GU_DIRECT, list);
-    graphicDrawColoredRectangle(GRAPHIC_BACKGROUND_COLOR, GRAPHIC_BACKGROUND_COLOR, 0, 30, 480, 212);
-    graphicDrawColoredRectangle(GRAPHIC_BORDER_COLOR, GRAPHIC_BORDER_COLOR, 0, 0, 480, 30);
-    graphicDrawColoredRectangle(GRAPHIC_BORDER_COLOR, GRAPHIC_BORDER_COLOR, 0, 242, 480, 30);
+    graphicDrawColoredRectangle(GRAPHIC_BACKGROUND_COLOR, GRAPHIC_BACKGROUND_COLOR, 0, 30, PSPDISP_DISPLAY_WIDTH, 212);
+    graphicDrawColoredRectangle(GRAPHIC_BORDER_COLOR, GRAPHIC_BORDER_COLOR, 0, 0, PSPDISP_DISPLAY_WIDTH, 30);
+    graphicDrawColoredRectangle(GRAPHIC_BORDER_COLOR, GRAPHIC_BORDER_COLOR, 0, 242, PSPDISP_DISPLAY_WIDTH, 30);
     sceGuFinish();
     sceGuSync(0,0);
   }
@@ -187,7 +178,7 @@ void graphicSetupOrtho()
 {
   sceGumMatrixMode(GU_PROJECTION);
   sceGumLoadIdentity();
-  sceGumOrtho(0, 480, 272, 0, -1, 1);
+  sceGumOrtho(0, PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT, 0, -1, 1);
 
   sceGumMatrixMode(GU_VIEW);
   sceGumLoadIdentity();
@@ -360,7 +351,7 @@ void graphicRedrawLastFrame()
   if (l_lastDrawnFrame == NULL)
     l_lastDrawnFrame = g_pixelBuffer;
 
-  graphicDrawFrame((unsigned int*)l_lastDrawnFrame, l_lastRotation, true);
+  graphicDrawFrame((unsigned int*)l_lastDrawnFrame, true);
 }
 
 
@@ -372,10 +363,9 @@ void graphicRedrawLastFrame()
   Copy the decoded image into the framebuffer.
   ---------------------------------------------------
 */
-void graphicDrawFrame(unsigned int* textureData, unsigned int rotation, bool forceDrawing)
+void graphicDrawFrame(unsigned int* textureData, bool forceDrawing)
 {
   l_lastDrawnFrame = (unsigned char*)textureData;
-  l_lastRotation = rotation;
 
   // Don't overwrite the menu
   if (g_menuActive && !forceDrawing)
@@ -383,47 +373,16 @@ void graphicDrawFrame(unsigned int* textureData, unsigned int rotation, bool for
 
   sceGuStart(GU_DIRECT, list);
 
-  float imageWidth = 0.0f;
-  float imageHeight = 0.0f;
-  float rotate = 0.0f;
-
-  switch (rotation)
-  {
-    case 0:
-      rotate = 0.0f;
-      imageWidth = 480.0f;
-      imageHeight = 272.0f;
-      break;
-    case COM_FLAGS_IMAGE_IS_ROTATED_90_DEG:
-      rotate = GU_PI * 0.5f;
-      imageWidth = 272.0f;
-      imageHeight = 480.0f;
-      break;
-    case COM_FLAGS_IMAGE_IS_ROTATED_180_DEG:
-      rotate = GU_PI;
-      imageWidth = 480.0f;
-      imageHeight = 272.0f;
-      break;
-    case COM_FLAGS_IMAGE_IS_ROTATED_270_DEG:
-      rotate = GU_PI * 1.5f;
-      imageWidth = 272.0f;
-      imageHeight = 480.0f;
-      break;
-  }
-
   graphicSetupOrtho();
-
-  sceGumTranslate(&l_moveToScreenCenter);
-  sceGumRotateZ(rotate);
 
   sceGuTexMode(GU_PSM_8888, 0, 0, GU_FALSE);	
   sceGuTexFunc(GU_TFX_REPLACE, GU_TCC_RGB);
   sceGuTexFilter(GU_NEAREST,GU_NEAREST);
   sceGuTexOffset(0.0f, 0.0f);
 
-  sceGuTexImage(0, 512, 512, imageWidth, (void*)textureData);
+  sceGuTexImage(0, 512, 512, PSPDISP_DISPLAY_WIDTH, (void*)textureData);
 
-  graphicSlicedBlit(-0.5f * imageWidth, -0.5 * imageHeight, imageWidth, imageHeight, 512.0f, 512.0f);
+  graphicSlicedBlit(0.0f, 0.0f, PSPDISP_DISPLAY_WIDTH, PSPDISP_DISPLAY_HEIGHT, 512.0f, 512.0f);
 
   sceGuFinish();
   sceGuSync(0,0);

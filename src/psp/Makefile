@@ -1,11 +1,10 @@
 # This file uses the PSP_* prefix to avoid conflicts with other Makefile variables
 #
 # The PSP app, built by the PSP toolchain (https://github.com/pspdev/pspdev), the way PSPSDK's build.mak does, in BIN_DIR/psp:
-# - the app (EBOOT.PBP), and the kernel modules it loads from its folder (kernel.prx and usbhostfs.prx), in PSP/GAME/PSPdisp, as they're copied on the memory stick
+# - the app (EBOOT.PBP), and the kernel modules it loads from its folder (kernel.prx and usb.prx), in PSP/GAME/PSPdisp, as they're copied on the memory stick
 # - the .zip of that PSP folder, to extract at the root of the memory stick, if zip is installed (otherwise it's skipped, with a note)
-# - sio.prx, the kernel module of the debug output on the serial port of the PSP, only loaded when the app is built for it (see debug.h)
 #
-# Each program (the app and each kernel module) is compiled from its main.c, which includes its other .c files, then linked into an ELF, which psp-prxgen converts into a PRX
+# Each program (the app and each kernel module) is compiled from a single .c file, which includes its other .c files, then linked into an ELF, which psp-prxgen converts into a PRX
 
 # The folder of this file, absolute (and not ending with /), as the paths in an included Makefile are relative to where make runs
 PSP_SRC_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -47,15 +46,15 @@ PSP_MODULE_LDLIBS  := -lpspmodinfo -lpspsdk -lpspkernel
 .DEFAULT_GOAL := all
 
 ALL :=
+PSP_APP_STUBS :=
 
 # The folders of the build, created before a file is made in them (each file has its folder as an order-only prerequisite)
 $(PSP_BIN_DIR) $(PSP_GAME_DIR):
 	mkdir -p $@
 
-# The kernel modules, before the app, as it links their stubs (their *_SRC_DIR)
+# The kernel modules, before the app, as they add their stubs to PSP_APP_STUBS
 include $(PSP_SRC_DIR)/kernel/Makefile
-include $(PSP_SRC_DIR)/usbhostfs/Makefile
-include $(PSP_SRC_DIR)/sio/Makefile
+include $(PSP_SRC_DIR)/usb/Makefile
 
 # Flags for the app:
 # - _PSP_FW_VERSION, the firmware the headers of PSPSDK target, 3.71 as the old app
@@ -63,12 +62,9 @@ include $(PSP_SRC_DIR)/sio/Makefile
 PSP_APP_CPPFLAGS := $(PSP_CPPFLAGS) -D_PSP_FW_VERSION=371 -DPSPDISP_VERSION='"$(VERSION)"'
 # A PRX started as a user program (prxspecs gives its start files)
 PSP_APP_LDFLAGS  := $(PSP_LDFLAGS) -specs=$(PSPSDK)/lib/prxspecs
-# The libraries, with the libjpeg of the old app, built with 4 bytes per pixel (see libjpeg/libjpeg.diff)
-PSP_APP_LDLIBS   := -lpspaudio -lpng -lz -lpspusb -lpspgum -lpspgu -lm -lpsppower -lpspjpeg -lpsputility -lpspkubridge -lpsprtc $(PSP_SRC_DIR)/libjpeg/libjpeg.a \
-	-lpspdebug -lpspdisplay -lpspge -lpspctrl -lpspnet -lpspnet_apctl
-
-# The stubs of the functions the app calls in the kernel modules, which the system links once the app loads them
-PSP_APP_STUBS := $(KERNEL_SRC_DIR)/kernel.S $(USBHOSTFS_SRC_DIR)/USBHostFS.S $(SIO_SRC_DIR)/sio.S
+# The libraries
+PSP_APP_LDLIBS   := -lpspaudio -lpng -lz -lintrafont -lpspusb -lpspgum -lpspgu -lm -lpsppower -lpspjpeg -lpsputility -lpspkubridge -lpsprtc -ljpeg \
+	-lpspdisplay -lpspge -lpspctrl -lpspnet -lpspnet_apctl
 
 ALL += $(PSP_GAME_DIR)/EBOOT.PBP
 
@@ -114,7 +110,7 @@ $(info zip wasn't found, so the .zip of the PSP app isn't made: install it to ma
 endif
 
 # Made again from scratch, as zip only adds to an archive that exists
-$(PSP_ZIP): $(PSP_GAME_DIR)/EBOOT.PBP $(PSP_GAME_DIR)/kernel.prx $(PSP_GAME_DIR)/usbhostfs.prx $(PSP_GRAPHICS)
+$(PSP_ZIP): $(PSP_GAME_DIR)/EBOOT.PBP $(PSP_GAME_DIR)/kernel.prx $(PSP_GAME_DIR)/usb.prx $(PSP_GRAPHICS)
 	rm -f $@
 	cd $(PSP_BIN_DIR) && zip -r -X $@ PSP
 

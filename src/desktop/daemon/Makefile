@@ -51,8 +51,3 @@ $(BIN_DIR)/pspdisp-daemon$(EXE): $(DAEMON_SRC_DIR)/main.c $(WINICON_OBJ) | $(BIN
 
 # Include the dependencies to build the binary, the .d file is written when the binary is compiled
 -include $(DEP_DIR)/pspdisp-daemon$(EXE).d
-
-# The WinUSB driver package of the PSP (Windows), until the PSP app says itself that it uses WinUSB (see winusb.mk)
-ifeq ($(PLATFORM),windows)
-include $(DAEMON_SRC_DIR)/winusb.mk
-endif

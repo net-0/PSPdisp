@@ -23,14 +23,13 @@
 #include <pspnet_inet.h>
 #include <pspnet_resolver.h>
 #include <pspnet_apctl.h>
+#include <intraFont.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
 #include "common.h"
-#include "debug.h"
 #include "config.h"
 #include "graphic.h"
-#include "library/intraFont.h"
 
 // sceNetInetSocketAbort is not defined in the PSPSDK headers
 #ifndef sceNetInetSocketAbort

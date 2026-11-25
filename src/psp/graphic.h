@@ -16,26 +16,20 @@
 #include <string.h>
 #include <pspkernel.h>
 #include <pspdisplay.h>
-#include <pspdebug.h>
 #include <stdlib.h>
 #include <pspctrl.h>
 #include <pspgu.h>
 #include <pspgum.h>
 #include "common.h"
-#include "debug.h"
 #include "menu.h"
-#include "shared.h"
+#include "../shared.h"
 
 // Intrafont library
-#include "library/intraFont.h"
+#include <intraFont.h>
 
 // Danzeff keyboard
 #include "library/danzeff.h"
 
-
-// Rotation of the transmited image
-unsigned int rotation;
-unsigned int lastRotation;
 
 // Intrafont data
 intraFont* sansSerifSmall;
@@ -53,10 +47,8 @@ void* l_frameBuffer;
 #define COLOR_DARKGRAY 0xFF3F3F3F
 #define COLOR_BLACK 0x88000000
 
-#define ROTATION_OFF 0
-#define ROTATION_90 1
-#define ROTATION_180 2
-#define ROTATION_270 3
+// The angle of the text, in degrees, given to intraFontSetStyle()
+#define TEXT_ANGLE_HORIZONTAL 0.0f
 
 
 
@@ -98,7 +90,7 @@ void graphicDrawColoredRectangle(int colorTop, int colorBottom, int startX, int 
 void graphicDrawTexturedRectangle(void* texture, int startX, int startY, int width, int height);
 void graphicSlicedBlit(float startX, float startY, float imageWidth, float imageHeight, float textureWidth, float textureHeight);
 void graphicRedrawLastFrame();
-void graphicDrawFrame(unsigned int* textureData, unsigned int rotation, bool forceDrawing);
+void graphicDrawFrame(unsigned int* textureData, bool forceDrawing);
 void graphicDrawWave(float period, float offset, float amplitude);
 void graphicStartDrawing();
 void graphicFinishDrawing(bool switchBuffer);
