@@ -7,7 +7,7 @@
  *****************************************************/
 
 /*
- * The session with a connected PSP, over the old protocol (see `shared.old.h`): for each frame, the daemon sends a frame header and its data, and the PSP answers with its controls and its settings.
+ * The session with a connected PSP, over the old protocol (see `shared.h`): for each frame, the daemon sends a frame header and its data, and the PSP answers with its controls and its settings.
  * Over USB the PSP sends its settings in every response, over WLAN only when they changed (see `PSPdispDaemonLink.com_settings_always`).
  *
  * With sound, every frame carries a chunk of audio, because the PSP app resets its sound when a frame comes without one, so the audio chunks give the pace of the frames.
